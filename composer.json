@@ -22,5 +22,10 @@
     "web-token/jwt-key-mgmt": ">=1.0 <3.0",
     "dmstr/yii2-token-manager": "^1.0",
     "bizley/jwt": "^3.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "dmstr\\usuario\\keycloak\\": "src"
+    }
   }
 }

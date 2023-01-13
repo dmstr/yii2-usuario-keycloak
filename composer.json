@@ -1,0 +1,26 @@
+{
+  "name": "dmstr/yii2-usuario-keycloak",
+  "description": "Yii2 usuario keycloak plugin",
+  "authors": [
+    {
+      "name": "Andres Klapper",
+      "email": "a.klapper@herzogkommunikation.de"
+    },
+    {
+      "name": "Elias Luhr",
+      "email": "e.luhr@herzogkommunikation.de"
+    }
+  ],
+  "require": {
+    "yiisoft/yii2-authclient": "^2.2",
+    "2amigos/yii2-usuario": "^1.5.1",
+    "web-token/jwt-checker": ">=1.0 <3.0",
+    "web-token/jwt-signature": ">=1.0 <3.0",
+    "web-token/jwt-signature-algorithm-hmac": ">=1.0 <3.0",
+    "web-token/jwt-signature-algorithm-ecdsa": ">=1.0 <3.0",
+    "web-token/jwt-signature-algorithm-rsa": ">=1.0 <3.0",
+    "web-token/jwt-key-mgmt": ">=1.0 <3.0",
+    "dmstr/yii2-token-manager": "^1.0",
+    "bizley/jwt": "^3.4"
+  }
+}

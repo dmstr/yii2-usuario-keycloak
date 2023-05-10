@@ -71,3 +71,26 @@ use dmstr\tokenManager\components\TokenManager;
 
 $token = Yii::$app->tokenManager->getToken();
 ```
+
+#### Token attribute mapping
+
+if you need to map attributes from within the token to "other" clientAttributes, this can be done via the `clientTokenAttributeMap` property.
+
+Example: 
+The user id in the token is named `sub` but should be mapped to the `id` attribute
+
+```php
+'bootstrap' => [
+    [
+        'class' => Bootstrap::class,
+        'clientAuthUrl' => getenv('KEYCLOAK_AUTH_URL'),
+        'clientIssuerUrl' => getenv('KEYCLOAK_ISSUER_URL'),
+        'clientClientId' => getenv('KEYCLOAK_CLIENT'),
+        'clientClientSecret' => getenv('KEYCLOAK_CLIENT_SECRET'),
+        'clientTokenAttributeMap' => [
+                'id' => 'sub'
+         ],
+    ]
+],
+
+```

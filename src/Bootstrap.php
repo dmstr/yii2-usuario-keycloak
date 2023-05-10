@@ -30,7 +30,7 @@ class Bootstrap implements BootstrapInterface
     public string $clientIssuerUrl;
     public string $clientClientId;
     public string $clientClientSecret;
-
+    public array $clientTokenAttributeMap = [];
     public string $jwtComponentId = 'jwt';
     public string $tokenManagerComponentId = 'tokenManager';
 
@@ -56,7 +56,8 @@ class Bootstrap implements BootstrapInterface
             'clientId' => $this->clientClientId,
             'clientSecret' => $this->clientClientSecret,
             'name' => $this->clientName,
-            'title' => $this->clientTitle
+            'title' => $this->clientTitle,
+            'clientTokenAttributeMap' => $this->clientTokenAttributeMap
         ];
         $app->authClientCollection->setClients($clients);
 

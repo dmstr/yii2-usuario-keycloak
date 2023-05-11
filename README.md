@@ -77,7 +77,7 @@ $token = Yii::$app->tokenManager->getToken();
 if you need to map attributes from within the token to "other" clientAttributes, this can be done via the `clientTokenAttributeMap` property.
 
 Example: 
-The user id in the token is named `sub` but should be mapped to the `id` attribute
+The user id in the keycloak token is named `sub` but must be mapped to the `id` attribute
 
 ```php
 'bootstrap' => [
@@ -88,7 +88,7 @@ The user id in the token is named `sub` but should be mapped to the `id` attribu
         'clientClientId' => getenv('KEYCLOAK_CLIENT'),
         'clientClientSecret' => getenv('KEYCLOAK_CLIENT_SECRET'),
         'clientTokenAttributeMap' => [
-                'id' => 'sub'
+                'sub' => 'id'
          ],
     ]
 ],

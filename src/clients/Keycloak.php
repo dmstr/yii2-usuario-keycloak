@@ -25,9 +25,9 @@ class Keycloak extends OpenIdConnect implements AuthClientInterface
         $loaded = $this->loadJws($token);
 
         if (is_array($this->clientTokenAttributeMap)) {
-            foreach ($this->clientTokenAttributeMap as $key => $src) {
-                if (empty($loaded[$key])) {
-                    $loaded[$key] = $loaded[$src] ?? null;
+            foreach ($this->clientTokenAttributeMap as $src => $dst) {
+                if (empty($loaded[$dst])) {
+                    $loaded[$dst] = $loaded[$src] ?? null;
                 }
             }
         }

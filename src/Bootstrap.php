@@ -31,6 +31,13 @@ class Bootstrap implements BootstrapInterface
     public string $clientClientId;
     public string $clientClientSecret;
 
+    /**
+     * array of src -> dst attribute names that should be mapped from token (src)
+     * to dst key in clients\Keycloak::initUserAttributes
+     *
+     * @var array
+     */
+    public array $clientTokenAttributeMap = [];
     public string $jwtComponentId = 'jwt';
     public string $tokenManagerComponentId = 'tokenManager';
 
@@ -56,7 +63,8 @@ class Bootstrap implements BootstrapInterface
             'clientId' => $this->clientClientId,
             'clientSecret' => $this->clientClientSecret,
             'name' => $this->clientName,
-            'title' => $this->clientTitle
+            'title' => $this->clientTitle,
+            'clientTokenAttributeMap' => $this->clientTokenAttributeMap
         ];
         $app->authClientCollection->setClients($clients);
 

@@ -13,13 +13,25 @@ use yii\web\HttpException;
  */
 class Keycloak extends OpenIdConnect implements AuthClientInterface
 {
+
+    public $clientTokenAttributeMap = [];
+
     /**
      * {@inheritdoc}
      */
     protected function initUserAttributes()
     {
         $token = $this->getAccessToken()->getToken();
-        return $this->loadJws($token);
+        $loaded = $this->loadJws($token);
+
+        if (is_array($this->clientTokenAttributeMap)) {
+            foreach ($this->clientTokenAttributeMap as $src => $dst) {
+                if (empty($loaded[$dst])) {
+                    $loaded[$dst] = $loaded[$src] ?? null;
+                }
+            }
+        }
+        return $loaded;
     }
 
     /**
@@ -38,6 +50,7 @@ class Keycloak extends OpenIdConnect implements AuthClientInterface
         // returns the e-mail as it corresponds with the username
         return $this->getEmail();
     }
+
 
     /**
      * @throws HttpException

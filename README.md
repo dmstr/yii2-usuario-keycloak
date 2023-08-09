@@ -26,7 +26,8 @@ return [
         'class' => Bootstrap::class,
         'clientAuthUrl' => getenv('KEYCLOAK_AUTH_URL'),
         'clientIssuerUrl' => getenv('KEYCLOAK_ISSUER_URL'),
-        'clientClientId' => getenv('KEYCLOAK_CLIENT'),
+        'clientTokenUrl' => getenv('KEYCLOAK_TOKEN_URL'),
+        'clientClientId' => getenv('KEYCLOAK_CLIENT_ID'),
         'clientClientSecret' => getenv('KEYCLOAK_CLIENT_SECRET')
     ]
 ],
@@ -85,6 +86,7 @@ The user id in the keycloak token is named `sub` but must be mapped to the `id` 
         'class' => Bootstrap::class,
         'clientAuthUrl' => getenv('KEYCLOAK_AUTH_URL'),
         'clientIssuerUrl' => getenv('KEYCLOAK_ISSUER_URL'),
+        'clientTokenUrl' => getenv('KEYCLOAK_TOKEN_URL'),
         'clientClientId' => getenv('KEYCLOAK_CLIENT'),
         'clientClientSecret' => getenv('KEYCLOAK_CLIENT_SECRET'),
         'clientTokenAttributeMap' => [

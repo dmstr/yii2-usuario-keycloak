@@ -45,7 +45,7 @@ return [
         'validationConstraints' => function ($jwt) {
             $config = $jwt->getConfiguration();
             return [
-                new SignedWith($config->signer(), $config->signingKey()),
+                new SignedWith($config->signer(), $config->verificationKey()),
                 new IssuedBy(getenv('JWT_TOKEN_ISSUER')),
                 new LooseValidAt(SystemClock::fromUTC()),
             ];

@@ -87,7 +87,7 @@ The user id in the keycloak token is named `sub` but must be mapped to the `id` 
         'clientAuthUrl' => getenv('KEYCLOAK_AUTH_URL'),
         'clientIssuerUrl' => getenv('KEYCLOAK_ISSUER_URL'),
         'clientTokenUrl' => getenv('KEYCLOAK_TOKEN_URL'),
-        'clientClientId' => getenv('KEYCLOAK_CLIENT'),
+        'clientClientId' => getenv('KEYCLOAK_CLIENT_ID'),
         'clientClientSecret' => getenv('KEYCLOAK_CLIENT_SECRET'),
         'clientTokenAttributeMap' => [
                 'sub' => 'id'

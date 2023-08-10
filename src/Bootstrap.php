@@ -68,6 +68,24 @@ class Bootstrap implements BootstrapInterface
         ];
         $app->authClientCollection->setClients($clients);
 
+        // Persist social network account because it is not persisted by default
+        Event::on(SecurityController::class, SocialNetworkAuthEvent::EVENT_BEFORE_AUTHENTICATE, function (SocialNetworkAuthEvent $event) {
+            if ($event->getClient()->getName() === $this->clientName) {
+                $event->account->save(false);
+            }
+        });
+
+        // Disable mailer transport for social network connect to prevent sending welcome email
+        $oldUseFileTransport = Yii::$app->getMailer()->useFileTransport;
+        // https://github.com/2amigos/yii2-usuario/issues/401#issuecomment-776502277
+        Event::on(RegistrationController::class, SocialNetworkConnectEvent::EVENT_BEFORE_CONNECT, function (SocialNetworkConnectEvent $event) {
+            Yii::$app->getMailer()->useFileTransport = true;
+        });
+
+        // Use old value after connect
+        Event::on(RegistrationController::class, SocialNetworkConnectEvent::EVENT_AFTER_CONNECT, function (SocialNetworkConnectEvent $event) use ($oldUseFileTransport) {
+            Yii::$app->getMailer()->useFileTransport = $oldUseFileTransport;
+        });
 
         // Create/update attached account
         Event::on(SecurityController::class, SocialNetworkAuthEvent::EVENT_BEFORE_AUTHENTICATE, function (SocialNetworkAuthEvent $event) {
@@ -98,7 +116,7 @@ class Bootstrap implements BootstrapInterface
 
             }
             Yii::$app->getUser()->logout();
-            throw new BadRequestHttpException(\Yii::t('usuario.keycloak','Invalid token'));
+            throw new BadRequestHttpException(\Yii::t('usuario.keycloak', 'Invalid token'));
         });
     }
 }

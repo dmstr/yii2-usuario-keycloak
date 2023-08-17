@@ -3,16 +3,15 @@
 namespace dmstr\usuario\keycloak;
 
 use bizley\jwt\Jwt;
+use Da\User\Controller\RegistrationController;
 use Da\User\Controller\SecurityController;
 use Da\User\Event\SocialNetworkAuthEvent;
+use Da\User\Event\SocialNetworkConnectEvent;
 use dmstr\tokenManager\components\TokenManager;
 use dmstr\usuario\keycloak\clients\Keycloak;
-use Lcobucci\JWT\Token;
-use Lcobucci\JWT\UnencryptedToken;
 use yii\authclient\OAuthToken;
 use yii\base\BootstrapInterface;
 use yii\base\Event;
-use yii\helpers\VarDumper;
 use yii\web\BadRequestHttpException;
 use Yii;
 

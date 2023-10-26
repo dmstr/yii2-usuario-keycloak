@@ -1,6 +1,6 @@
 {
-  "name": "dmstr/yii2-mlr-usuario-keycloak",
-  "description": "Yii2 usuario keycloak plugin for MLR",
+  "name": "dmstr/yii2-usuario-keycloak",
+  "description": "Yii2 usuario keycloak plugin",
   "authors": [
     {
       "name": "Andres Klapper",

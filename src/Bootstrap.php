@@ -8,6 +8,7 @@ use Da\User\Controller\SecurityController;
 use Da\User\Event\SocialNetworkAuthEvent;
 use Da\User\Event\SocialNetworkConnectEvent;
 use dmstr\tokenManager\components\TokenManager;
+use dmstr\tokenManager\event\TokenManagerEvent;
 use dmstr\usuario\keycloak\clients\Keycloak;
 use yii\authclient\OAuthToken;
 use yii\base\BootstrapInterface;
@@ -108,8 +109,14 @@ class Bootstrap implements BootstrapInterface
                 if ($jwtComponent->validate($parsedToken)) {
                     /** @var TokenManager $tokenManager */
                     $tokenManager = Yii::$app->get($this->tokenManagerComponentId);
+                    // Create token event
+                    $tokenEvent = Yii::createObject(TokenManagerEvent::class, [$parsedToken]);
+                    // Fire before token set event
+                    $tokenManager->trigger(TokenManagerEvent::EVENT_BEFORE_SET_TOKEN, $tokenEvent);
                     // save parsed token via token manager
                     $tokenManager->setToken($parsedToken);
+                    // Fire after token set event
+                    $tokenManager->trigger(TokenManagerEvent::EVENT_AFTER_SET_TOKEN, $tokenEvent);
                     return; // get out of here
                 }
 

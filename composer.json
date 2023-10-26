@@ -1,6 +1,6 @@
 {
-  "name": "dmstr/yii2-usuario-keycloak",
-  "description": "Yii2 usuario keycloak plugin",
+  "name": "dmstr/yii2-mlr-usuario-keycloak",
+  "description": "Yii2 usuario keycloak plugin for MLR",
   "authors": [
     {
       "name": "Andres Klapper",
@@ -20,7 +20,7 @@
     "web-token/jwt-signature-algorithm-ecdsa": ">=1.0 <3.0",
     "web-token/jwt-signature-algorithm-rsa": ">=1.0 <3.0",
     "web-token/jwt-key-mgmt": ">=1.0 <3.0",
-    "dmstr/yii2-token-manager": "^1.2",
+    "dmstr/yii2-token-manager": "^1.4",
     "bizley/jwt": "^3.4"
   },
   "autoload": {

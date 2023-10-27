@@ -30,6 +30,8 @@ class Bootstrap implements BootstrapInterface
     public string $clientIssuerUrl;
     public string $clientClientId;
     public string $clientClientSecret;
+    const LOGIN_ORIGIN = "LOGIN_ORIGIN";
+    const TYPE_KEYCLOAK = "TYPE_KEYCLOAK";
 
     /**
      * array of src -> dst attribute names that should be mapped from token (src)
@@ -94,7 +96,7 @@ class Bootstrap implements BootstrapInterface
             }
         });
 
-        // Retrieve and process and save token
+        // Retrieve, process and save token
         Event::on(SecurityController::class, SocialNetworkAuthEvent::EVENT_AFTER_AUTHENTICATE, function (SocialNetworkAuthEvent $event) {
             $oauthAccessToken = $event->getClient()->getAccessToken();
             // check ig access token is in expected format
@@ -115,11 +117,14 @@ class Bootstrap implements BootstrapInterface
                     $tokenManager->trigger(TokenManagerEvent::EVENT_BEFORE_SET_TOKEN, $tokenEvent);
                     // save parsed token via token manager
                     $tokenManager->setToken($parsedToken);
+                    // Save the type of login in the session so we can logout different type of accounts
+                    if(Yii::$app->session) {
+                        Yii::$app->session->set(self::LOGIN_ORIGIN, self::TYPE_KEYCLOAK);
+                    }
                     // Fire after token set event
                     $tokenManager->trigger(TokenManagerEvent::EVENT_AFTER_SET_TOKEN, $tokenEvent);
                     return; // get out of here
                 }
-
             }
             Yii::$app->getUser()->logout();
             throw new BadRequestHttpException(\Yii::t('usuario.keycloak', 'Invalid token'));

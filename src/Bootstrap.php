@@ -111,12 +111,22 @@ class Bootstrap implements BootstrapInterface
                 if ($jwtComponent->validate($parsedToken)) {
                     /** @var TokenManager $tokenManager */
                     $tokenManager = Yii::$app->get($this->tokenManagerComponentId);
+                    // Process Id Token
+                    $rawIdToken = $oauthAccessToken->getParam('id_token') ?? null;
+                    $parsedIdToken = $rawIdToken ? $jwtComponent->getParser()->parse($rawIdToken) : null;
+                    // Process Refresh Token
+                    $rawRefreshToken = $oauthAccessToken->getParam('refresh_token') ?? null;
+                    $parsedRefreshToken = $rawRefreshToken ? $jwtComponent->getParser()->parse($rawRefreshToken) : null;
                     // Create token event
-                    $tokenEvent = Yii::createObject(TokenManagerEvent::class, [$parsedToken]);
+                    $tokenEvent = Yii::createObject(TokenManagerEvent::class, [$parsedToken, $parsedIdToken, $parsedRefreshToken]);
                     // Fire before token set event
                     $tokenManager->trigger(TokenManagerEvent::EVENT_BEFORE_SET_TOKEN, $tokenEvent);
                     // save parsed token via token manager
-                    $tokenManager->setToken($parsedToken);
+                    $tokenManager->setTokens($parsedToken, $parsedIdToken, $parsedRefreshToken);
+                    // Set Id Token
+                    if($parsedIdToken) $tokenManager->setIdToken($parsedIdToken);
+                    // Set refresh token
+                    if($parsedRefreshToken) $tokenManager->setRefreshToken($parsedRefreshToken);
                     // Save the type of login in the session so we can logout different type of accounts
                     if(Yii::$app->session) {
                         Yii::$app->session->set(self::LOGIN_ORIGIN, self::TYPE_KEYCLOAK);

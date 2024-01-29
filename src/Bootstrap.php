@@ -30,6 +30,8 @@ class Bootstrap implements BootstrapInterface
     public string $clientIssuerUrl;
     public string $clientClientId;
     public string $clientClientSecret;
+    public string $id_token = "id_token";
+    public string $refresh_token = "refresh_token";
     const LOGIN_ORIGIN = "LOGIN_ORIGIN";
     const TYPE_KEYCLOAK = "TYPE_KEYCLOAK";
 
@@ -112,10 +114,10 @@ class Bootstrap implements BootstrapInterface
                     /** @var TokenManager $tokenManager */
                     $tokenManager = Yii::$app->get($this->tokenManagerComponentId);
                     // Process Id Token
-                    $rawIdToken = $oauthAccessToken->getParam('id_token') ?? null;
+                    $rawIdToken = $oauthAccessToken->getParam($this->id_token) ?? null;
                     $parsedIdToken = $rawIdToken ? $jwtComponent->getParser()->parse($rawIdToken) : null;
                     // Process Refresh Token
-                    $rawRefreshToken = $oauthAccessToken->getParam('refresh_token') ?? null;
+                    $rawRefreshToken = $oauthAccessToken->getParam($this->refresh_token) ?? null;
                     $parsedRefreshToken = $rawRefreshToken ? $jwtComponent->getParser()->parse($rawRefreshToken) : null;
                     // Create token event
                     $tokenEvent = Yii::createObject(TokenManagerEvent::class, [$parsedToken, $parsedIdToken, $parsedRefreshToken]);

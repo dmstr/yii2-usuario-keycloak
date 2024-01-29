@@ -10,11 +10,12 @@ use Da\User\Event\SocialNetworkConnectEvent;
 use dmstr\tokenManager\components\TokenManager;
 use dmstr\tokenManager\event\TokenManagerEvent;
 use dmstr\usuario\keycloak\clients\Keycloak;
+use Lcobucci\JWT\UnencryptedToken;
+use Yii;
 use yii\authclient\OAuthToken;
 use yii\base\BootstrapInterface;
 use yii\base\Event;
 use yii\web\BadRequestHttpException;
-use Yii;
 
 /**
  * --- PROPERTIES ---
@@ -123,12 +124,16 @@ class Bootstrap implements BootstrapInterface
                     $tokenEvent = Yii::createObject(TokenManagerEvent::class, [$parsedToken, $parsedIdToken, $parsedRefreshToken]);
                     // Fire before token set event
                     $tokenManager->trigger(TokenManagerEvent::EVENT_BEFORE_SET_TOKEN, $tokenEvent);
-                    // save parsed token via token manager
-                    $tokenManager->setTokens($parsedToken, $parsedIdToken, $parsedRefreshToken);
+                    // save parsed access token
+                    $tokenManager->setToken($parsedToken);
                     // Set Id Token
-                    if($parsedIdToken) $tokenManager->setIdToken($parsedIdToken);
+                    if($parsedIdToken && $parsedIdToken instanceof UnencryptedToken) {
+                        $tokenManager->setIdToken($parsedIdToken);
+                    }
                     // Set refresh token
-                    if($parsedRefreshToken) $tokenManager->setRefreshToken($parsedRefreshToken);
+                    if($parsedRefreshToken && $parsedRefreshToken instanceof UnencryptedToken) {
+                        $tokenManager->setRefreshToken($parsedRefreshToken);
+                    }
                     // Save the type of login in the session so we can logout different type of accounts
                     if(Yii::$app->session) {
                         Yii::$app->session->set(self::LOGIN_ORIGIN, self::TYPE_KEYCLOAK);

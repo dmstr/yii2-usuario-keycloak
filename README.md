@@ -229,6 +229,108 @@ return [
 ];
 ```
 
+**User identity to use in rest calls**
+
+We suggest to use the `JwtHttpBearerAuth` from [bizley/yii2jwt](https://github.com/bizley/yii2-jwt) for this. You can
+use the following example to implement it in your user
+
+```php
+<?php
+
+use bizley\jwt\JwtHttpBearerAuth;
+use Da\User\Model\SocialNetworkAccount;
+use Lcobucci\JWT\Token\Plain;
+use yii\base\NotSupportedException;
+use Yii;
+
+class User extends \Da\User\Model\User {
+
+    /**
+     * @inheritdoc  
+     */
+    public static function findIdentityByAccessToken($token, $type = null)
+    {
+        if ($type === JwtHttpBearerAuth::class) {
+
+            /** @var Plain $jwtToken */
+            $jwtToken = Yii::$app->jwt->getParser()->parse((string)$token);
+
+            if ($jwtToken->hasBeenIssuedBy(getenv('KEYCLOAK_ISSUER_URL'))) {
+                
+                $claims = $jwtToken->claims();
+                $userClientId = $claims->get('sub');
+
+                /** @var SocialNetworkAccount|null $socialAccount */
+                $socialAccount = SocialNetworkAccount::find()->andWhere([
+                    'client_id' => $userClientId
+                ])->one();
+
+                if ($socialAccount) {
+                    return static::find()
+                        ->andWhere(['id' => $socialAccount->user_id])
+                        ->andWhere(['blocked_at' => null])
+                        ->andWhere(['NOT', ['confirmed_at' => null]])
+                        ->andWhere(['gdpr_deleted' => 0])
+                        ->one();
+                }
+                
+                return null;
+            }
+        }
+        throw new NotSupportedException("Type '$type' is not implemented.");
+    }
+}
+```
+
+Generate the keys for the jwt
+
+```bash
+ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
+# Don't add passphrase
+openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+```
+
+```dotenv
+KEYCLOAK_PRIVATE_KEY_FILE=file:///path/to/jwtRS256.key
+KEYCLOAK_PUBLIC_KEY_FILE=file:///path/to/jwtRS256.key.pub
+```
+
+```php
+use bizley\jwt\Jwt;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Lcobucci\Clock\SystemClock;
+
+return [
+    'components' => [
+        'jwt' => [
+            'class' => Jwt::class,
+            'signer' => Jwt::RS256,
+            'signingKey' => [
+                'key' => getenv('KEYCLOAK_PRIVATE_KEY_FILE'),
+                'method' => Jwt::METHOD_FILE,
+            ],
+            'verifyingKey' => [
+                'key' => getenv('KEYCLOAK_PUBLIC_KEY_FILE'),
+                'method' => Jwt::METHOD_FILE,
+            ],
+            'validationConstraints' => function ($jwt) {
+                $config = $jwt->getConfiguration();
+                return [
+                    new SignedWith($config->signer(), $config->verificationKey()),
+                    new IssuedBy(getenv('KEYCLOAK_ISSUER_URL')),
+                    new StrictValidAt(SystemClock::fromUTC()),
+                ];
+            }
+        ]
+    ]
+];
+```
+
+When using the `JwtHttpBearerAuth` ensure that cors is before the `authenticator` in the `behaviors` of your controller
+or module and all access controll stuff is after.
+
 ## TokenRoleRule
 
 This rule allows you to assign roles to users based on the roles they have in keycloak. This is useful if you want to

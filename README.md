@@ -139,7 +139,7 @@ use yii\base\InvalidConfigException;
 /**
  * @property-read string|null $authSource
  */
-class User extends \dmstr\web\User
+class User extends yii\web\User
 {
     protected const AUTH_SOURCE_CLIENT_ID_SESSION_KEY = 'authSourceClientId';
 
@@ -223,7 +223,7 @@ return [
 return [
     'components' => [
         'user' => [
-            'loginUrl' => ['/user/security/auth', 'authclient' => 'keycloak']
+            'loginUrl' => '/user/security/auth?authclient=keycloak'
         ]
     ]
 ];

@@ -12,6 +12,7 @@ use yii\helpers\Url;
 class SecurityController extends \Da\User\Controller\SecurityController
 {
     public string $keycloakAuthClientId = 'keycloak';
+    public bool $overrideAuthRedirect = true;
 
     /**
      * @inheritdoc
@@ -19,8 +20,10 @@ class SecurityController extends \Da\User\Controller\SecurityController
     public function actions()
     {
         $actions = parent::actions();
-        // Original redirect view introduces some wierd js magic. We don't want that so we overload it.
-        $actions['auth']['redirectView'] = dirname(__DIR__) . '/views/security/redirect.php';
+        if ($this->overrideAuthRedirect) {
+            // Original redirect view introduces some wierd js magic. We don't want that so we overload it.
+            $actions['auth']['redirectView'] = dirname(__DIR__) . '/views/security/redirect.php';
+        }
         return $actions;
     }
 

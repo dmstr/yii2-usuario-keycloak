@@ -13,7 +13,7 @@
   ],
   "require": {
     "yiisoft/yii2-authclient": "^2.2",
-    "2amigos/yii2-usuario": "dev-master as 1.6.999",
+    "2amigos/yii2-usuario": "^1.6.2",
     "web-token/jwt-signature-algorithm-hmac": "^3.2",
     "web-token/jwt-signature-algorithm-ecdsa": "^3.2",
     "web-token/jwt-signature-algorithm-rsa": "^3.2",

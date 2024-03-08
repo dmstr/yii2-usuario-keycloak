@@ -13,7 +13,8 @@ services:
     #  - ./keycloak/import/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432"
-  # There is one example user in the init.sql file with username: user and password: user1. For admin user, you can use the environment variables KEYCLOAK_ADMIN and KEYCLOAK_ADMIN_PASSWORD
+  
+  # There is one example user in the init.sql file for the app realm with username: user and password: user1. For admin user, you can use the environment variables KEYCLOAK_ADMIN and KEYCLOAK_ADMIN_PASSWORD
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.6
     command: start-dev

@@ -26,10 +26,10 @@ You may need to replace 127.0.0.1 with your docker ip
 
 ```dotenv
 KEYCLOAK_CLIENT_NAME=Keycloak
-KEYCLOAK_CLIENT_ID=web
-# See credentials tab in app realms web client
+KEYCLOAK_CLIENT_ID=app
+# See credentials tab in example realms app client
 KEYCLOAK_CLIENT_SECRET=
-KEYCLOAK_ISSUER_URL=http://keycloak-local:8080/realms/app
+KEYCLOAK_ISSUER_URL=http://keycloak-local:8080/realms/example
 ```
 
 ```php

@@ -26,9 +26,10 @@ You may need to replace 127.0.0.1 with your docker ip
 
 ```dotenv
 KEYCLOAK_CLIENT_NAME=Keycloak
-KEYCLOAK_CLIENT_ID=your-client
-KEYCLOAK_CLIENT_SECRET=your-secret
-KEYCLOAK_ISSUER_URL=http://keycloak-local:8080/realms/your-realm
+KEYCLOAK_CLIENT_ID=web
+# See credentials tab in app realms web client
+KEYCLOAK_CLIENT_SECRET=
+KEYCLOAK_ISSUER_URL=http://keycloak-local:8080/realms/app
 ```
 
 ```php
@@ -79,13 +80,16 @@ return [
 
 ```php
 use Da\User\Event\SocialNetworkAuthEvent;
+use dmstr\usuario\keycloak\controllers\SecurityController;
 use yii\web\ForbiddenHttpException;
+
 
 return [
     'modules' => [
         'user' => [
             'controllerMap' => [
                 'security' => [
+                    'class' => SecurityController::class,
                     'on ' . SocialNetworkAuthEvent::EVENT_BEFORE_AUTHENTICATE => function (SocialNetworkAuthEvent $event) {
                         if (isset($event->getClient()->getUserAttributes()['email_verified']) && $event->getClient()->getUserAttributes()['email_verified'] === false) {
                             throw new ForbiddenHttpException(Yii::t('usuario-keycloak', 'Account is not verified. Please confirm your registration email.'));
@@ -331,6 +335,33 @@ return [
 When using the `JwtHttpBearerAuth` ensure that cors is before the `authenticator` in the `behaviors` of your controller
 or module and all access controll stuff is after.
 
+**Auto submit social account registration confirm form**
+
+```php
+use Da\User\Controller\RegistrationController;
+use ActionEvent;
+
+return [
+    'modules' => [
+        'user' => [
+            'controllerMap' => [
+                'registration' => [
+                    'class' => RegistrationController::class,
+                    'on ' . RegistrationController::EVENT_BEFORE_ACTION => function (ActionEvent $event) {
+                        if ($event->action->id === 'connect') {
+                            // You may need to change the form id but this is the default
+                            $event->action->controller->view->registerJs('$("form#User").submit();');
+                        }
+                    }
+                ]
+            ]
+        ]
+    ] 
+]
+```
+```php
+
+```
 ## TokenRoleRule
 
 This rule allows you to assign roles to users based on the roles they have in keycloak. This is useful if you want to

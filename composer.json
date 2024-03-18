@@ -13,19 +13,19 @@
   ],
   "require": {
     "yiisoft/yii2-authclient": "^2.2",
-    "2amigos/yii2-usuario": "^1.5.1",
-    "web-token/jwt-checker": "^3.2",
-    "web-token/jwt-signature": "^3.2",
+    "2amigos/yii2-usuario": "^1.6.3",
     "web-token/jwt-signature-algorithm-hmac": "^3.2",
     "web-token/jwt-signature-algorithm-ecdsa": "^3.2",
     "web-token/jwt-signature-algorithm-rsa": "^3.2",
-    "web-token/jwt-key-mgmt": "^3.2",
-    "dmstr/yii2-token-manager": "^2.0.0",
-    "bizley/jwt": "^4.1"
+    "web-token/jwt-checker": "^3.2",
+    "web-token/jwt-key-mgmt": "^3.2"
   },
   "autoload": {
     "psr-4": {
       "dmstr\\usuario\\keycloak\\": "src"
     }
+  },
+  "suggest": {
+    "bizley/yii2jwt": "When using JWT for REST authentication."
   }
 }

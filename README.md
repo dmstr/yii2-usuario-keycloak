@@ -198,7 +198,7 @@ return [
             try {
                 /** @var Keycloak $keycloak */
                 $keycloak = Yii::$app->authClientCollection->getClient($keycloakClientId);
-                // WARNING: Yii2 auth client package uses deprecated exception
+                // WARNING: Yii2 auth client package uses deprecated exception.
             } catch (InvalidParamException $exception) {
                 Yii::error($exception->getMessage());
             }
@@ -350,7 +350,7 @@ return [
                     'on ' . RegistrationController::EVENT_BEFORE_ACTION => function (ActionEvent $event) {
                         if ($event->action->id === 'connect') {
                             // You may need to change the form id but this is the default
-                            $event->action->controller->view->registerJs('$("form#User").submit();');
+                            $event->action->controller->view->registerJs('if ($(".has-error").length === 0){$("form#User").submit()};');
                         }
                     }
                 ]

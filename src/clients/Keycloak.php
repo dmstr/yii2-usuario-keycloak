@@ -65,4 +65,12 @@ class Keycloak extends OpenIdConnect implements AuthClientInterface
         }
         return null;
     }
+
+    /**
+     * Support new 1.6.3 version of usuario
+     */
+    public function getUserId()
+    {
+        return $this->getUserAttributes()['id'] ?? null;
+    }
 }

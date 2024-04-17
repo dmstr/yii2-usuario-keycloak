@@ -63,7 +63,7 @@ class TokenRoleRule extends Rule
         // check if there is at least one item
         $baseName = $parts[0] ?? null;
         if ($baseName === null) {
-            return null;
+            return [];
         }
 
         // remove first part because it is saved in $baseName
@@ -76,7 +76,7 @@ class TokenRoleRule extends Rule
         foreach ($parts as $part) {
             // check if key exists. If not return default.
             if (!isset($baseValue[$part])) {
-                return null;
+                return [];
             }
             // check if value is array to continue. If not return value
             if (!is_array($baseValue[$part])) {

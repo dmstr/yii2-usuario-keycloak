@@ -240,6 +240,8 @@ use the following example to implement it in your user
 ```php
 <?php
 
+namespace app\models;
+
 use bizley\jwt\JwtHttpBearerAuth;
 use Da\User\Model\SocialNetworkAccount;
 use Lcobucci\JWT\Token\Plain;
@@ -283,6 +285,20 @@ class User extends \Da\User\Model\User {
         throw new NotSupportedException("Type '$type' is not implemented.");
     }
 }
+```
+
+Using the identity class
+
+```php
+use app\models\User as UserModel;
+
+return [
+    'components' => [
+        'user' => [
+            'identityClass' => UserModel::class
+        ]
+    ]
+]
 ```
 
 Generate the keys for the jwt

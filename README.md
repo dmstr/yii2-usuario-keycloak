@@ -182,7 +182,7 @@ use Da\User\Event\SocialNetworkAuthEvent;
 use dmstr\usuario\keycloak\controllers\SecurityController;
 use yii\authclient\ClientErrorResponseException;
 use yii\base\Event;
-use yii\base\InvalidParamException;
+use yii\base\InvalidArgumentException;
 use yii\web\Application;
 
 // Save the auth client info to differentiate afterward from which auth client the user was authenticated
@@ -198,8 +198,7 @@ return [
             try {
                 /** @var Keycloak $keycloak */
                 $keycloak = Yii::$app->authClientCollection->getClient($keycloakClientId);
-                // WARNING: Yii2 auth client package uses deprecated exception.
-            } catch (InvalidParamException $exception) {
+            } catch (InvalidArgumentException $exception) {
                 Yii::error($exception->getMessage());
             }
             // Check if the token is expired. If so, the getAccessToken throws an error

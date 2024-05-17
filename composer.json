@@ -22,6 +22,7 @@
     }
   },
   "suggest": {
-    "bizley/yii2jwt": "When using JWT for REST authentication."
+    "bizley/yii2jwt": "When using JWT for REST authentication.",
+    "lcobucci/clock": "JWT StrictValidAt check"
   }
 }

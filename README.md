@@ -318,7 +318,7 @@ KEYCLOAK_PUBLIC_KEY_FILE=file:///path/to/jwtRS256.key.pub
 use bizley\jwt\Jwt;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
-use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\Clock\SystemClock;
 
 return [
@@ -339,7 +339,7 @@ return [
                 return [
                     new SignedWith($config->signer(), $config->verificationKey()),
                     new IssuedBy(getenv('KEYCLOAK_ISSUER_URL')),
-                    new StrictValidAt(SystemClock::fromUTC()),
+                    new LooseValidAt(SystemClock::fromUTC()),
                 ];
             }
         ]

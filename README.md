@@ -180,34 +180,27 @@ use app\components\User;
 use Da\User\AuthClient\Keycloak;
 use Da\User\Event\SocialNetworkAuthEvent;
 use dmstr\usuario\keycloak\controllers\SecurityController;
-use yii\authclient\ClientErrorResponseException;
-use yii\base\Event;
+use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\web\Application;
 
-// Save the auth client info to differentiate afterward from which auth client the user was authenticated
-Event::on(SecurityController::class, SocialNetworkAuthEvent::EVENT_AFTER_AUTHENTICATE, function (SocialNetworkAuthEvent $event) {
-    Yii::$app->getUser()->setAuthSource($event->getClient()->getId());
-});
-
 return [
-    'on ' . Application::EVENT_BEFORE_REQUEST => function () {
+        'on ' . Application::EVENT_BEFORE_REQUEST => function () {
         $user = Yii::$app->getUser();
         $keycloakClientId = 'keycloak';
         if ($user && !$user->getIsGuest() && Yii::$app->getUser()->getAuthSource() === $keycloakClientId) {
             try {
+                $jwt = Yii::$app->jwt;
                 /** @var Keycloak $keycloak */
                 $keycloak = Yii::$app->authClientCollection->getClient($keycloakClientId);
-            } catch (InvalidArgumentException $exception) {
+                // Check if token is valid
+                if (!$jwt->validate($keycloak->getAccessToken()->getToken())) {
+                    // If token is invalid log out the user
+                    throw new Exception('Access token invalid.');
+                }
+            } catch (Exception $exception) {
                 Yii::error($exception->getMessage());
-            }
-            // Check if the token is expired. If so, the getAccessToken throws an error
-            // INFO: This also triggers a request to keycloak for every request the app makes!
-            try {
-                $keycloak->getAccessToken();
-            } catch (ClientErrorResponseException $exception) {
-                Yii::info($exception->getMessage());
-                // If token is expired log out the user
+                // Logout user if token cannot be revalidated or is revoked
                 $user->logout();
             }
         }
@@ -216,7 +209,20 @@ return [
         'user' => [
             'class' => User::class 
         ]
-    ]
+    ],
+    'modules' => [
+        'user' => [
+            'controllerMap' => [
+                'security' => [
+                    'class' => SecurityController::class,
+                    'on ' . SocialNetworkAuthEvent::EVENT_AFTER_AUTHENTICATE => function (SocialNetworkAuthEvent $event) {
+                        // Save the auth client info to differentiate afterward from which auth client the user was authenticated
+                        Yii::$app->getUser()->setAuthSource($event->getClient()->getId());
+                    }
+                ]
+            ]
+        ]
+    ] 
 ];
 ```
 

@@ -256,31 +256,27 @@ class User extends \Da\User\Model\User {
     public static function findIdentityByAccessToken($token, $type = null)
     {
         if ($type === JwtHttpBearerAuth::class) {
-
             /** @var Plain $jwtToken */
             $jwtToken = Yii::$app->jwt->getParser()->parse((string)$token);
-
-            if ($jwtToken->hasBeenIssuedBy(getenv('KEYCLOAK_ISSUER_URL'))) {
                 
-                $claims = $jwtToken->claims();
-                $userClientId = $claims->get('sub');
+            $claims = $jwtToken->claims();
+            $userClientId = $claims->get('sub');
 
-                /** @var SocialNetworkAccount|null $socialAccount */
-                $socialAccount = SocialNetworkAccount::find()->andWhere([
-                    'client_id' => $userClientId
-                ])->one();
+            /** @var SocialNetworkAccount|null $socialAccount */
+            $socialAccount = SocialNetworkAccount::find()->andWhere([
+                'client_id' => $userClientId
+            ])->one();
 
-                if ($socialAccount) {
-                    return static::find()
-                        ->andWhere(['id' => $socialAccount->user_id])
-                        ->andWhere(['blocked_at' => null])
-                        ->andWhere(['NOT', ['confirmed_at' => null]])
-                        ->andWhere(['gdpr_deleted' => 0])
-                        ->one();
-                }
-                
-                return null;
+            if ($socialAccount) {
+                return static::find()
+                    ->andWhere(['id' => $socialAccount->user_id])
+                    ->andWhere(['blocked_at' => null])
+                    ->andWhere(['NOT', ['confirmed_at' => null]])
+                    ->andWhere(['gdpr_deleted' => 0])
+                    ->one();
             }
+            
+            return null;
         }
         throw new NotSupportedException("Type '$type' is not implemented.");
     }

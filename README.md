@@ -264,12 +264,13 @@ class User extends \Da\User\Model\User {
 
             /** @var SocialNetworkAccount|null $socialAccount */
             $socialAccount = SocialNetworkAccount::find()->andWhere([
+                'provider' => 'keycloak',
                 'client_id' => $userClientId
             ])->one();
 
             if ($socialAccount) {
                 return static::find()
-                    ->andWhere(['id' => $socialAccount->user_id])
+                    ->whereId($socialAccount->user_id)
                     ->andWhere(['blocked_at' => null])
                     ->andWhere(['NOT', ['confirmed_at' => null]])
                     ->andWhere(['gdpr_deleted' => 0])

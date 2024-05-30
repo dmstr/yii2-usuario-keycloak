@@ -337,7 +337,7 @@ return [
                 'key' => getenv('KEYCLOAK_PUBLIC_KEY_FILE'),
                 'method' => Jwt::METHOD_FILE,
             ],
-            'validationConstraints' => function ($jwt) {
+            'validationConstraints' => function (Jwt $jwt) {
                 $config = $jwt->getConfiguration();
                 return [
                     new SignedWith($config->signer(), $config->verificationKey()),
@@ -349,6 +349,32 @@ return [
     ]
 ];
 ```
+
+if you only want to use validation and parsing you can configure the jwt component like this.
+
+```php
+use bizley\jwt\JwtTools;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+use Lcobucci\Clock\SystemClock;
+
+return [
+    'components' => [
+        'jwt' => [
+            'class' => JwtTools::class,
+            'validationConstraints' => function (JwtTools $jwt) {
+                return [
+                    new SignedWith($jwt->buildSigner(Jwt::RS256), InMemory::plainText(getenv('KEYCLOAK_PUBLIC_KEY_FILE'))),
+                    new IssuedBy(getenv('KEYCLOAK_ISSUER_URL')),
+                    new LooseValidAt(SystemClock::fromUTC()),
+                ];
+            }
+        ]
+    ]
+];
+```
+In combination with a Keycloak, the value `KEYCLOAK_PUBLIC_KEY_FILE` should be that from the Keycloak Public Key
 
 When using the `JwtHttpBearerAuth` ensure that cors is before the `authenticator` in the `behaviors` of your controller
 or module and all access controll stuff is after.

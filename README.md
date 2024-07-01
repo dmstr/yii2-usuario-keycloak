@@ -366,6 +366,8 @@ return [
             'validationConstraints' => function (JwtTools $jwt) {
                 return [
                     new SignedWith($jwt->buildSigner(Jwt::RS256), InMemory::plainText(getenv('KEYCLOAK_PUBLIC_KEY_FILE'))),
+                    // You could also use this line if you do not want to use a separate public key file
+                    // new SignedWith($jwt->buildSigner(Jwt::RS256), InMemory::plainText(KeycloakHelper::publicKeyFromIssuer(getenv('KEYCLOAK_ISSUER_URL')))),
                     new IssuedBy(getenv('KEYCLOAK_ISSUER_URL')),
                     new LooseValidAt(SystemClock::fromUTC()),
                 ];

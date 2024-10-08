@@ -33,6 +33,7 @@ class Bootstrap implements BootstrapInterface
     public string $clientClientSecret;
     public string $id_token = "id_token";
     public string $refresh_token = "refresh_token";
+    public bool $enablePkce = false;
     const LOGIN_ORIGIN = "LOGIN_ORIGIN";
     const TYPE_KEYCLOAK = "TYPE_KEYCLOAK";
 
@@ -69,7 +70,8 @@ class Bootstrap implements BootstrapInterface
             'clientSecret' => $this->clientClientSecret,
             'name' => $this->clientName,
             'title' => $this->clientTitle,
-            'clientTokenAttributeMap' => $this->clientTokenAttributeMap
+            'clientTokenAttributeMap' => $this->clientTokenAttributeMap,
+            'enablePkce' => $this->enablePkce
         ];
         $app->authClientCollection->setClients($clients);
 

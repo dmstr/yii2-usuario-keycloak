@@ -7,6 +7,7 @@ use Da\User\Event\UserEvent;
 use Yii;
 use yii\authclient\ClientErrorResponseException;
 use yii\authclient\OAuthToken;
+use yii\base\InvalidArgumentException;
 use yii\helpers\Url;
 
 class SecurityController extends \Da\User\Controller\SecurityController
@@ -34,10 +35,10 @@ class SecurityController extends \Da\User\Controller\SecurityController
 
         $this->trigger(UserEvent::EVENT_BEFORE_LOGOUT, $event);
 
-        /** @var Keycloak $client */
-        $client = Yii::$app->authClientCollection->getClient($this->keycloakAuthClientId);
-
         try {
+            /** @var Keycloak $client */
+            $client = Yii::$app->authClientCollection->getClient($this->keycloakAuthClientId);
+
             // Check if user is logged in via keycloak by checking the access token type
             if ($client instanceof Keycloak && $client->getAccessToken() instanceof OAuthToken) {
                 $logoutUrl = self::keycloakFrontChannelLogoutUrl($client);
@@ -52,6 +53,9 @@ class SecurityController extends \Da\User\Controller\SecurityController
         } catch (ClientErrorResponseException $exception) {
             // Token is not active anymore. Skipping logout from keycloak as its session should be already expired at this point
             Yii::warning($exception->getMessage());
+        } catch (InvalidArgumentException $exception) {
+            // Client is not found in collection
+            Yii::error($exception->getMessage());
         }
 
         if (Yii::$app->getUser()->logout()) {

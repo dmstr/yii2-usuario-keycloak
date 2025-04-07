@@ -21,7 +21,7 @@ class TokenRoleRule extends Rule
     /**
      * Name of the jwt claim in which the rbac roles are included
      */
-    public string $rbacRolesClaimName = 'groups';
+    public string $rbacRolesClaimName  = 'realm_access.roles';
 
     /**
      * @param string|int|null $user

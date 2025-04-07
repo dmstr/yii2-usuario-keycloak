@@ -2,9 +2,10 @@
 
 namespace dmstr\usuario\keycloak\auth;
 
+use Lcobucci\JWT\UnencryptedToken;
 use Yii;
 use yii\authclient\BaseOAuth;
-use yii\authclient\OAuthToken;
+use yii\base\InvalidConfigException;
 use yii\rbac\Item;
 use yii\rbac\Rule;
 
@@ -24,68 +25,50 @@ class TokenRoleRule extends Rule
     public string $rbacRolesClaimName  = 'realm_access.roles';
 
     /**
+     * JWT Tool component to parse JWT Tokens
+     */
+    public string $jwtComponent = "jwt";
+    /**
+     * Auth Collection of Clients
+     */
+    public string $authCollectionComponent = "authClientCollection";
+
+    /**
      * @param string|int|null $user
      * @param Item $item
      * @param array $params
      *
      * @return bool
+     * @throws InvalidConfigException
      */
     public function execute($user, $item, $params)
     {
         // Check if user is authenticated
         $identity = Yii::$app->getUser();
         if ($identity && !$identity->getIsGuest()) {
+            // Get the AuthClient
             /** @var BaseOAuth $client */
-            $client = Yii::$app->authClientCollection->getClient($this->authClientId);
-            $accessToken = $client->getAccessToken();
-            // If access token is null, user is not authenticated via keycloak
-            if ($accessToken instanceof OAuthToken) {
-                // Extract groups from access token and check if rbac item is in list
-                $roles = (array)$this->getClaim($this->rbacRolesClaimName, $accessToken);
+            $client = Yii::$app->get($this->authCollectionComponent)->getClient($this->authClientId);
+            // NOTE: oauth client returns the parsed info from *ID TOKEN* in this method and NOT the Access Token.
+            // Access Token and Refresh Token are included here as Parameters
+            $idToken = $client->getAccessToken();
+            // Get the real access token from the Params
+            $accessToken = $idToken?->getParam('access_token');
+            // The token here is actually a UnencryptedToken with Data Claims
+            /** @var UnencryptedToken $parsedAccessToken */
+            // Parse the real Access Token
+            $parsedAccessToken = Yii::$app->get($this->jwtComponent)->parse($accessToken);
+            // Check if rbacRolesClaimName has a custom name
+            $this->rbacRolesClaimName = Yii::$app->params['rbacRolesClaimName'] ?? $this->rbacRolesClaimName;
+            // Get the Roles from the Roles Claim
+            $roles = $parsedAccessToken->claims()->get($this->rbacRolesClaimName);
+            // If we don't have an Access Token or roles, directly return false
+            if ($accessToken && !empty($roles)) {
+                // Check if the Role is in the list of Roles from the token
                 return in_array($item->name, $roles);
             }
         }
         return false;
-    }
-
-    /**
-     * Get claims from the token.
-     * For nested claims, IE: "groups": ["a" : ["B", "C"]] use dot notation for $name: groups.a
-     * @param string $name
-     * @param $default
-     * @return mixed
-     */
-    protected function getClaim(string $name, OAuthToken $accessToken)
-    {
-        // split name into separate parts
-        $parts = explode('.', $name);
-
-        // check if there is at least one item
-        $baseName = $parts[0] ?? null;
-        if ($baseName === null) {
-            return [];
-        }
-
-        // remove first part because it is saved in $baseName
-        unset($parts[0]);
-
-        // set this as base value
-        $baseValue = $accessToken->getParam($baseName);
-
-        // iterate over the rest of the parts
-        foreach ($parts as $part) {
-            // check if key exists. If not return default.
-            if (!isset($baseValue[$part])) {
-                return [];
-            }
-            // check if value is array to continue. If not return value
-            if (!is_array($baseValue[$part])) {
-                return $baseValue;
-            }
-            $baseValue = $baseValue[$part];
-        }
-        // return the value
-        return $baseValue;
     }
 }
 

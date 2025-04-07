@@ -10,7 +10,7 @@ use yii\rbac\Item;
 use yii\rbac\Rule;
 
 /**
- * Rule which checks the group (or in $rbacRolesClaimName defined claim) and auto assignes it to the user.
+ * Rule which checks the group (or in $rbacRolesClaimName defined claim) and auto assigns it to the user.
  */
 class TokenRoleRule extends Rule
 {
@@ -21,6 +21,7 @@ class TokenRoleRule extends Rule
 
     /**
      * Name of the jwt claim in which the rbac roles are included
+     * NOTE: if this value gets changed: it ONLY affects new Rules created after it got updated.
      */
     public string $rbacRolesClaimName  = 'realm_access.roles';
 
@@ -58,8 +59,6 @@ class TokenRoleRule extends Rule
             /** @var UnencryptedToken $parsedAccessToken */
             // Parse the real Access Token
             $parsedAccessToken = Yii::$app->get($this->jwtComponent)->parse($accessToken);
-            // Check if rbacRolesClaimName has a custom name
-            $this->rbacRolesClaimName = Yii::$app->params['rbacRolesClaimName'] ?? $this->rbacRolesClaimName;
             // Get the Roles from the Roles Claim
             $roles = $parsedAccessToken->claims()->get($this->rbacRolesClaimName);
             // If we don't have an Access Token or roles, directly return false

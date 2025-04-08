@@ -394,19 +394,19 @@ The TokenRoleRule Rule can be configured to work with different Keycloak configu
 Default configuration:
 
 $authClientId$ 
-is the name of the client in the main.php used to connect to an IDP. It defaults to 'keycloak'
+<br>is the name of the client in the main.php used to connect to an IDP. It defaults to 'keycloak'
 
-$rbacRolesClaimName$ 
-claim where the Roles are saved in the Access Token. Keycloak defaults to 'realm_access.roles'
+$rbacRolesClaimName$
+<br>claim where the Roles are saved in the Access Token. Keycloak defaults to 'realm_access.roles'
 
 $jwtComponent$
-JWT component used to parse JWT Tokens. Defaults to 'jwt'
+<br>JWT component used to parse JWT Tokens. Defaults to 'jwt'
 
 $authCollectionComponent$
-Auth collection of clients. Defaults to 'authClientCollection'
+<br>Auth collection of clients. Defaults to 'authClientCollection'
 
 $tokenParam$
-Parameter used to extract the Token used for role checking, defaults to 'access_token'
+<br>Parameter used to extract the Token used for role checking, defaults to 'access_token'
 
 ### Configuration
 
@@ -416,11 +416,11 @@ The parameters mentioned above can be configured like this
 use dmstr\usuario\keycloak\auth\TokenRoleRule;
 
 'container' => [
-        'definitions' => [
-            TokenRoleRule::class => [
-                'rbacRolesClaimName' => 'roles',
-                ...
-            ]
+    'definitions' => [
+        TokenRoleRule::class => [
+            'rbacRolesClaimName' => 'roles',
+            ...
         ]
     ]
+]
 ```

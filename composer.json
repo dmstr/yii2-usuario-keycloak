@@ -18,7 +18,8 @@
     "web-token/jwt-signature-algorithm-ecdsa": "^3.2",
     "web-token/jwt-signature-algorithm-rsa": "^3.2",
     "web-token/jwt-checker": "^3.2",
-    "web-token/jwt-key-mgmt": "^3.2"
+    "web-token/jwt-key-mgmt": "^3.2",
+    "lcobucci/jwt": "^5.1"
   },
   "autoload": {
     "psr-4": {

@@ -362,8 +362,65 @@ return [
 ```php
 
 ```
+Add a JWT Component to be able to parse JWT Tokens
+
+```php
+use bizley\jwt\JwtTools;
+use Lcobucci\Clock\SystemClock;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
+
+return [
+    'components' => [
+        'jwt' => [
+            'class' => JwtTools::class,
+            'validationConstraints' => function (JwtTools $jwt) {
+                return [
+                    new LooseValidAt(SystemClock::fromUTC())
+                ];
+            }
+        ]
+    ] 
+]
+```
+
 ## TokenRoleRule
 
 This rule allows you to assign roles to users based on the roles they have in keycloak. This is useful if you want to
-use keycloak as a single source of truth for your user roles. Note that the role names in keycloak must match the role
-and should be assiged to any logged in user.
+use keycloak as a single source of truth for your user roles. Note that the role names in keycloak must match the roles
+in RBAC and should be assigned to the "Default" Role so they get evaluated for all logged in users.
+
+The TokenRoleRule Rule can be configured to work with different Keycloak configurations.
+
+Default configuration:
+
+$authClientId$ 
+is the name of the client in the main.php used to connect to an IDP. It defaults to 'keycloak'
+
+$rbacRolesClaimName$ 
+claim where the Roles are saved in the Access Token. Keycloak defaults to 'realm_access.roles'
+
+$jwtComponent$
+JWT component used to parse JWT Tokens. Defaults to 'jwt'
+
+$authCollectionComponent$
+Auth collection of clients. Defaults to 'authClientCollection'
+
+$tokenParam$
+Parameter used to extract the Token used for role checking, defaults to 'access_token'
+
+### Configuration
+
+The parameters mentioned above can be configured like this
+
+```php
+use dmstr\usuario\keycloak\auth\TokenRoleRule;
+
+'container' => [
+        'definitions' => [
+            TokenRoleRule::class => [
+                'rbacRolesClaimName' => 'roles',
+                ...
+            ]
+        ]
+    ]
+```

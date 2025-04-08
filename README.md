@@ -391,7 +391,7 @@ in RBAC and should be assigned to the "Default" Role so they get evaluated for a
 
 The TokenRoleRule Rule can be configured to work with different Keycloak configurations.
 
-Default configuration:
+**Default configuration:**
 
 $authClientId$ 
 <br>is the name of the client in the main.php used to connect to an IDP. It defaults to 'keycloak'

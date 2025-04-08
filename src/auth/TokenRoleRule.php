@@ -29,19 +29,19 @@ class TokenRoleRule extends Rule
     /**
      * JWT Tool component to parse JWT Tokens
      */
-    public string $jwtComponent = "jwt";
+    public string $jwtComponent = 'jwt';
 
     /**
      * Auth Collection of Clients
      */
-    public string $authCollectionComponent = "authClientCollection";
+    public string $authCollectionComponent = 'authClientCollection';
 
     /**
      * Parameter name where the token is saved in the token data.
      * Note: tokenData comes from the client getAccessToken() method, which parses IDToken info and adds refresh and
      * access tokens as params to the data
      */
-    public string $tokenParam = "access_token";
+    public string $tokenParam = 'access_token';
 
     /**
      * @param string|int|null $user

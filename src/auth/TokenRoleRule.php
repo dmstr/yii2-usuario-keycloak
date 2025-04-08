@@ -37,7 +37,9 @@ class TokenRoleRule extends Rule
     public string $authCollectionComponent = "authClientCollection";
 
     /**
-     * Parameter name where the token is saved
+     * Parameter name where the token is saved in the token data.
+     * Note: tokenData comes from the client getAccessToken() method, which parses IDToken info and adds refresh and
+     * access tokens as params to the data
      */
     public string $tokenParam = "access_token";
 

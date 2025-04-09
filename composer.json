@@ -14,7 +14,13 @@
   "require": {
     "yiisoft/yii2-authclient": "^2.2.16",
     "2amigos/yii2-usuario": "^1.6.3",
-    "web-token/jwt-library": "^3.4"
+    "web-token/jwt-signature-algorithm-hmac": "^3.2",
+    "web-token/jwt-signature-algorithm-ecdsa": "^3.2",
+    "web-token/jwt-signature-algorithm-rsa": "^3.2",
+    "web-token/jwt-checker": "^3.2",
+    "web-token/jwt-key-mgmt": "^3.2",
+    "web-token/jwt-library": "^3.4",
+    "lcobucci/jwt": "^5.1"
   },
   "autoload": {
     "psr-4": {

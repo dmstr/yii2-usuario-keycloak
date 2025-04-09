@@ -2,14 +2,15 @@
 
 namespace dmstr\usuario\keycloak\auth;
 
+use Lcobucci\JWT\UnencryptedToken;
 use Yii;
 use yii\authclient\BaseOAuth;
-use yii\authclient\OAuthToken;
+use yii\base\InvalidConfigException;
 use yii\rbac\Item;
 use yii\rbac\Rule;
 
 /**
- * Rule which checks the group (or in $rbacRolesClaimName defined claim) and auto assignes it to the user.
+ * Rule which checks the group (or in $rbacRolesClaimName defined claim) and auto assigns it to the user.
  */
 class TokenRoleRule extends Rule
 {
@@ -20,8 +21,27 @@ class TokenRoleRule extends Rule
 
     /**
      * Name of the jwt claim in which the rbac roles are included
+     * NOTE: if this value gets changed: it ONLY affects new Rules created after it got updated.
+     * Note2: Keycloak Default is realm_access.roles
      */
-    public string $rbacRolesClaimName = 'groups';
+    public string $rbacRolesClaimName  = 'realm_access.roles';
+
+    /**
+     * JWT Tool component to parse JWT Tokens
+     */
+    public string $jwtComponent = 'jwt';
+
+    /**
+     * Auth Collection of Clients
+     */
+    public string $authCollectionComponent = 'authClientCollection';
+
+    /**
+     * Parameter name where the token is saved in the token data.
+     * Note: tokenData comes from the client getAccessToken() method, which parses IDToken info and adds refresh and
+     * access tokens as params to the data
+     */
+    public string $tokenParam = 'access_token';
 
     /**
      * @param string|int|null $user
@@ -29,63 +49,34 @@ class TokenRoleRule extends Rule
      * @param array $params
      *
      * @return bool
+     * @throws InvalidConfigException
      */
     public function execute($user, $item, $params)
     {
         // Check if user is authenticated
         $identity = Yii::$app->getUser();
         if ($identity && !$identity->getIsGuest()) {
+            // Get the AuthClient
             /** @var BaseOAuth $client */
-            $client = Yii::$app->authClientCollection->getClient($this->authClientId);
-            $accessToken = $client->getAccessToken();
-            // If access token is null, user is not authenticated via keycloak
-            if ($accessToken instanceof OAuthToken) {
-                // Extract groups from access token and check if rbac item is in list
-                $roles = (array)$this->getClaim($this->rbacRolesClaimName, $accessToken);
+            $client = Yii::$app->get($this->authCollectionComponent)->getClient($this->authClientId);
+            // NOTE: oauth client returns the parsed info from *ID TOKEN* in this method and NOT the Access Token.
+            // Access Token and Refresh Token are included here as Parameters
+            $tokenData = $client->getAccessToken();
+            // Get the real access token from the Params
+            $accessToken = $tokenData?->getParam($this->tokenParam);
+            // The token here is actually a UnencryptedToken with Data Claims
+            /** @var UnencryptedToken $parsedAccessToken */
+            // Parse the real Access Token
+            $parsedAccessToken = Yii::$app->get($this->jwtComponent)->parse($accessToken);
+            // Get the Roles from the Roles Claim
+            $roles = $parsedAccessToken->claims()->get($this->rbacRolesClaimName);
+            // If we don't have an Access Token or roles, directly return false
+            if ($accessToken && !empty($roles)) {
+                // Check if the Role is in the list of Roles from the token
                 return in_array($item->name, $roles);
             }
         }
         return false;
-    }
-
-    /**
-     * Get claims from the token.
-     * For nested claims, IE: "groups": ["a" : ["B", "C"]] use dot notation for $name: groups.a
-     * @param string $name
-     * @param $default
-     * @return mixed
-     */
-    protected function getClaim(string $name, OAuthToken $accessToken)
-    {
-        // split name into separate parts
-        $parts = explode('.', $name);
-
-        // check if there is at least one item
-        $baseName = $parts[0] ?? null;
-        if ($baseName === null) {
-            return [];
-        }
-
-        // remove first part because it is saved in $baseName
-        unset($parts[0]);
-
-        // set this as base value
-        $baseValue = $accessToken->getParam($baseName);
-
-        // iterate over the rest of the parts
-        foreach ($parts as $part) {
-            // check if key exists. If not return default.
-            if (!isset($baseValue[$part])) {
-                return [];
-            }
-            // check if value is array to continue. If not return value
-            if (!is_array($baseValue[$part])) {
-                return $baseValue;
-            }
-            $baseValue = $baseValue[$part];
-        }
-        // return the value
-        return $baseValue;
     }
 }
 

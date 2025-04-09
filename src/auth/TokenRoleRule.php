@@ -6,6 +6,7 @@ use Lcobucci\JWT\UnencryptedToken;
 use Yii;
 use yii\authclient\BaseOAuth;
 use yii\base\InvalidConfigException;
+use yii\helpers\VarDumper;
 use yii\rbac\Item;
 use yii\rbac\Rule;
 
@@ -61,19 +62,21 @@ class TokenRoleRule extends Rule
             $client = Yii::$app->get($this->authCollectionComponent)->getClient($this->authClientId);
             // NOTE: oauth client returns the parsed info from *ID TOKEN* in this method and NOT the Access Token.
             // Access Token and Refresh Token are included here as Parameters
-            $tokenData = $client->getAccessToken();
+            $tokenData = $client?->getAccessToken();
             // Get the real access token from the Params
             $accessToken = $tokenData?->getParam($this->tokenParam);
-            // The token here is actually a UnencryptedToken with Data Claims
-            /** @var UnencryptedToken $parsedAccessToken */
-            // Parse the real Access Token
-            $parsedAccessToken = Yii::$app->get($this->jwtComponent)->parse($accessToken);
-            // Get the Roles from the Roles Claim
-            $roles = $parsedAccessToken->claims()->get($this->rbacRolesClaimName);
-            // If we don't have an Access Token or roles, directly return false
-            if ($accessToken && !empty($roles)) {
-                // Check if the Role is in the list of Roles from the token
-                return in_array($item->name, $roles);
+            if($accessToken) {
+                // The token here is actually a UnencryptedToken with Data Claims
+                /** @var UnencryptedToken $parsedAccessToken */
+                // Parse the real Access Token
+                $parsedAccessToken = Yii::$app->get($this->jwtComponent)?->parse($accessToken);
+                // Get the Roles from the Roles Claim
+                $roles = $parsedAccessToken?->claims()?->get($this->rbacRolesClaimName);
+                // If we don't have an Access Token or roles, directly return false
+                if (!empty($roles)) {
+                    // Check if the Role is in the list of Roles from the token
+                    return in_array($item->name, $roles);
+                }
             }
         }
         return false;

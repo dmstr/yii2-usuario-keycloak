@@ -15,6 +15,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
     public string $keycloakAuthClientId = 'keycloak';
     public bool $overrideAuthRedirect = true;
     public bool $skipLogoutConfirmation = true;
+    public string $postLogoutRedirectUrl;
 
     /**
      * @inheritdoc
@@ -42,7 +43,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
 
             // Check if user is logged in via keycloak by checking the access token type
             if ($client instanceof Keycloak && $client->getAccessToken() instanceof OAuthToken) {
-                $logoutUrl = self::keycloakFrontChannelLogoutUrl($client, $this->skipLogoutConfirmation);
+                $logoutUrl = $this->keycloakFrontChannelLogoutUrl($client, $this->skipLogoutConfirmation);
                 if (!empty($logoutUrl) && Yii::$app->getUser()->logout()) {
                     Yii::$app->response->redirect($logoutUrl)->send();
                     $this->trigger(UserEvent::EVENT_AFTER_LOGOUT, $event);
@@ -72,7 +73,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
      * @param bool $skipLogoutConfirmation
      * @return string|null
      */
-    protected static function keycloakFrontChannelLogoutUrl(Keycloak $client, bool $skipLogoutConfirmation = true): ?string
+    protected function keycloakFrontChannelLogoutUrl(Keycloak $client, bool $skipLogoutConfirmation = true): ?string
     {
         $logoutUrl = null;
         // Check if logout confirmation is active or not
@@ -83,17 +84,17 @@ class SecurityController extends \Da\User\Controller\SecurityController
                 $accessToken = $client->getAccessToken();
                 // check if we have an ID token to trigger the logout with no confirmation
                 if($accessToken?->getParam('id_token')) {
-                    $logoutUrl = $client->getConfigParam('end_session_endpoint') . '?id_token_hint=' . $accessToken->getParam('id_token') . '&post_logout_redirect_uri=' . Url::base(true);
+                    $logoutUrl = $client->getConfigParam('end_session_endpoint') . '?id_token_hint=' . $accessToken->getParam('id_token') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
                 }
                 // If there's no id token, logout the user with the default confirmation
                 else {
-                    $logoutUrl = $client->getConfigParam('end_session_endpoint');
+                    $logoutUrl = $client->getConfigParam('end_session_endpoint') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
                 }
             }
         } else {
             // If confirmation is enabled and front channel log out is active
             if ($client->getConfigParam('frontchannel_logout_supported', false)) {
-                $logoutUrl = $client->getConfigParam('end_session_endpoint');
+                $logoutUrl = $client->getConfigParam('end_session_endpoint') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
             }
         }
         return $logoutUrl;

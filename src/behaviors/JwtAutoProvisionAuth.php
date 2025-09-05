@@ -21,6 +21,7 @@ use yii\web\BadRequestHttpException;
 use yii\web\IdentityInterface;
 use yii\web\UnauthorizedHttpException;
 use yii\web\UnprocessableEntityHttpException;
+use yii\web\User as UserComponent;
 
 class JwtAutoProvisionAuth extends HttpBearerAuth
 {
@@ -47,6 +48,11 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
      * enable or disable debug logging messages
      */
     public bool $debug = false;
+
+    /**
+     * @var null|callable
+     */
+    public $afterUserValidated;
 
     /**
      * @throws \yii\base\InvalidConfigException If configuration is not correct
@@ -111,11 +117,27 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
             throw new UnauthorizedHttpException(Yii::t('usuario-keycloak', 'Token constraint failed'));
         }
 
+        /** @var User $identity */
+        $identity = $this->findOrCreateUser($user, $authHeaderValue);
+
+        if ($identity instanceof IdentityInterface) {
+            $this->logInfo('Logging in new user #' . $identity->getId());
+            if (is_callable($this->afterUserValidated)) {
+                if (!call_user_func($this->afterUserValidated, $identity, $identity->getSocialNetworkAccounts()[$this->authClientId] ?? null, $authHeaderValue)) {
+                    $this->logInfo('AfterUserValidated failed');
+                    return null;
+                }
+            }
+        }
+        return $identity;
+    }
+
+    public function findOrCreateUser(UserComponent $user, string $authHeaderValue): ?IdentityInterface
+    {
         $existingIdentity = $user->loginByAccessToken($authHeaderValue, get_class($this));
 
         // Does the identity exist? Good.
         if ($existingIdentity instanceof IdentityInterface) {
-            $this->logInfo('Logging in existing user #' . $existingIdentity->getId());
             return $existingIdentity;
         }
 
@@ -127,7 +149,6 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
         }
 
         // try again with newly created user
-        $this->logInfo('Logging in new user #' . $newIdentity->getId());
         return $user->loginByAccessToken($authHeaderValue, get_class($this));
     }
 
@@ -256,6 +277,8 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
                 $event = $this->make(UserEvent::class, [$user]);
                 $user->trigger(UserEvent::EVENT_AFTER_REGISTER, $event);
             }
+
+
             return $user;
         } catch (DbException $exception) {
             $this->logException($exception);

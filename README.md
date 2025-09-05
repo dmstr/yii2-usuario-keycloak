@@ -261,6 +261,7 @@ class User extends \Da\User\Model\User {
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
+        // use dmstr\usuario\keycloak\behaviors\JwtAutoProvisionAuth if you want to auto creat the user. Module must be configured. See section `JwtAutoProvisionAuth`
         if ($type === JwtHttpBearerAuth::class) {
             /** @var Plain $jwtToken */
             $jwtToken = Yii::$app->jwt->getParser()->parse((string)$token);
@@ -453,6 +454,32 @@ $authCollectionComponent$
 
 $tokenParam$
 <br>Parameter used to extract the Token used for role checking, defaults to 'access_token'
+
+## JwtAutoProvisionAuth
+
+`JwtAutoProvisionAuth` is an authentication filter that automatically creates user accounts when someone logs in with a valid JWT token from auth client. If a user with the token's email doesn't exist in the
+system, it creates a new user account and links it to the Keycloak identity; if the user already exists, it just connects the auth client account to the existing user. This allows seamless user onboarding
+where people can access the application immediately using their auth client credentials without manual account creation.
+
+It is auto configured to use a jwt component named `jwt` and a auth client named `keycloak`
+
+Example usage in a `yii\rest\Controller` or `yii\base\Module`
+
+```php
+use dmstr\usuario\keycloak\behaviors\JwtAutoProvisionAuth
+
+public function behaviors(): array
+  {
+      $behaviors = parent::behaviors();
+      $behaviors['authenticator'] = [
+          'class' => JwtAutoProvisionAuth::class,
+          'jwt' => 'jwt', // your JWT component ID
+          'authClientId' => 'keycloak', // your auth client ID
+          'debug' => false
+      ];
+      return $behaviors;
+  }
+```
 
 ### Configuration
 

@@ -8,7 +8,9 @@ use Yii;
 use yii\authclient\ClientErrorResponseException;
 use yii\authclient\OAuthToken;
 use yii\base\InvalidArgumentException;
+use yii\db\Query;
 use yii\helpers\Url;
+use yii\web\ServerErrorHttpException;
 
 class SecurityController extends \Da\User\Controller\SecurityController
 {
@@ -30,6 +32,37 @@ class SecurityController extends \Da\User\Controller\SecurityController
         return $actions;
     }
 
+    public function behaviors()
+    {
+        $behaviors = parent::behaviors();
+        $behaviors['access']['rules'][] = [
+            'allow' => true,
+            'actions' => ['frontend-logout']
+        ];
+        return $behaviors;
+    }
+
+    /**
+     * @throws \yii\web\ServerErrorHttpException
+     */
+    public function actionFrontendLogout(string $sid)
+    {
+        // find all sessions with given sid and destroy them
+        $sessionIds = (new Query())
+            ->select('id')
+            ->from(Yii::$app->getSession()->sessionTable)
+            ->where(['keycloak_sid' => $sid])
+            ->column();
+
+        foreach ($sessionIds as $sessionId) {
+            if (!Yii::$app->getSession()->destroySession($sessionId)) {
+                throw new ServerErrorHttpException(Yii::t('usuario', 'An error occurred while destroying your session.'));
+            }
+        }
+
+        return '';
+    }
+
     public function actionLogout()
     {
         /** @var UserEvent $event */
@@ -44,7 +77,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
             // Check if user is logged in via keycloak by checking the access token type
             if ($client instanceof Keycloak && $client->getAccessToken() instanceof OAuthToken) {
                 $logoutUrl = $this->keycloakFrontChannelLogoutUrl($client, $this->skipLogoutConfirmation);
-                if (!empty($logoutUrl) && Yii::$app->getUser()->logout()) {
+                if (!empty($logoutUrl)) {
                     Yii::$app->response->redirect($logoutUrl)->send();
                     $this->trigger(UserEvent::EVENT_AFTER_LOGOUT, $event);
                     Yii::$app->end();
@@ -69,24 +102,25 @@ class SecurityController extends \Da\User\Controller\SecurityController
 
     /**
      * Logout the user
+     *
      * @param Keycloak $client
      * @param bool $skipLogoutConfirmation
+     *
      * @return string|null
      */
     protected function keycloakFrontChannelLogoutUrl(Keycloak $client, bool $skipLogoutConfirmation = true): ?string
     {
         $logoutUrl = null;
         // Check if logout confirmation is active or not
-        if($skipLogoutConfirmation) {
+        if ($skipLogoutConfirmation) {
             // Check if Keycloak has front channel log out active
             if ($client->getConfigParam('frontchannel_logout_supported', false)) {
                 // get the token data
                 $accessToken = $client->getAccessToken();
                 // check if we have an ID token to trigger the logout with no confirmation
-                if($accessToken?->getParam('id_token')) {
+                if ($accessToken?->getParam('id_token')) {
                     $logoutUrl = $client->getConfigParam('end_session_endpoint') . '?id_token_hint=' . $accessToken->getParam('id_token') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
-                }
-                // If there's no id token, logout the user with the default confirmation
+                } // If there's no id token, logout the user with the default confirmation
                 else {
                     $logoutUrl = $client->getConfigParam('end_session_endpoint') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
                 }

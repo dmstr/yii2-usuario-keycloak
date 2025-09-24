@@ -455,6 +455,23 @@ $authCollectionComponent$
 $tokenParam$
 <br>Parameter used to extract the Token used for role checking, defaults to 'access_token'
 
+### Configuration
+
+The parameters mentioned above can be configured like this
+
+```php
+use dmstr\usuario\keycloak\auth\TokenRoleRule;
+
+'container' => [
+    'definitions' => [
+        TokenRoleRule::class => [
+            'rbacRolesClaimName' => 'roles',
+            ...
+        ]
+    ]
+]
+```
+
 ## JwtAutoProvisionAuth
 
 `JwtAutoProvisionAuth` is an authentication filter that automatically creates user accounts when someone logs in with a valid JWT token from auth client. If a user with the token's email doesn't exist in the
@@ -481,19 +498,48 @@ public function behaviors(): array
   }
 ```
 
-### Configuration
+## Front Channel Logout
 
-The parameters mentioned above can be configured like this
+For this to work you *must* use a `yii\web\MultiFieldSession` session e.g. `yii\web\DbSession`
+
+Web config for extra fields write callback in session
 
 ```php
-use dmstr\usuario\keycloak\auth\TokenRoleRule;
+'session' => [
+    'writeCallback' => function () {
+        try {
+            $sid = Yii::$app->authClientCollection->getClient('keycloak')->getAccessToken()?->getParam('sid');
+            return [
+                'keycloak_sid' => $sid
+            ];
+        } catch (ClientErrorResponseException $e) {
+            Yii::error($e->getMessage());
+        }
+        return [];
+    }
+]
+```
 
-'container' => [
-    'definitions' => [
-        TokenRoleRule::class => [
-            'rbacRolesClaimName' => 'roles',
-            ...
+Console config for migrations if you use `yii\web\DbSession`
+
+```php
+'controllerMap' => [
+    'migrate' => [
+        'migrationPath' => [
+            '@vendor/dmstr/yii2-usuario-keycloak/src/migrations'
         ]
     ]
 ]
 ```
+
+Optional but recommended: If you use `codemix\localeurls\UrlManager` as an url manager add this to you web config prevent unnecassary redirects
+
+```php
+'urlManager' => [
+    'ignoreLanguageUrlPatterns' => [
+        '#user/security/front-channel-logout#' => '#user/security/front-channel-logout#',
+    ]
+]
+```
+
+In your keycloak add this as your front channel logout url in the client settings: `https://your-domain/user/security/front-channel-logout`

@@ -45,7 +45,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
     /**
      * @throws \yii\web\ServerErrorHttpException
      */
-    public function actionFrontendLogout(string $sid)
+    public function actionFrontChannelLogout(string $sid)
     {
         // find all sessions with given sid and destroy them
         $sessionIds = (new Query())
@@ -120,8 +120,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
                 // check if we have an ID token to trigger the logout with no confirmation
                 if ($accessToken?->getParam('id_token')) {
                     $logoutUrl = $client->getConfigParam('end_session_endpoint') . '?id_token_hint=' . $accessToken->getParam('id_token') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
-                } // If there's no id token, logout the user with the default confirmation
-                else {
+                } else { // If there's no id token, logout the user with the default confirmation
                     $logoutUrl = $client->getConfigParam('end_session_endpoint') . '&post_logout_redirect_uri=' . ($this->postLogoutRedirectUrl ?? Url::base(true));
                 }
             }

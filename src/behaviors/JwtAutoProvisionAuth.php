@@ -103,7 +103,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
         // JWT in string form
         $authHeaderValue = $matches[1] ?? null;
 
-        $this->logDebug($authHeaderValue);
+        $this->logDebug($authHeaderValue ?: 'Header value is empty');
 
         if (!is_string($authHeaderValue)) {
             throw new BadRequestHttpException(Yii::t('usuario-keycloak', 'Token is invalid'));

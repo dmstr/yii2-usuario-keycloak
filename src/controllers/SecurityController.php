@@ -37,7 +37,7 @@ class SecurityController extends \Da\User\Controller\SecurityController
         $behaviors = parent::behaviors();
         $behaviors['access']['rules'][] = [
             'allow' => true,
-            'actions' => ['frontend-logout']
+            'actions' => ['front-channel-logout']
         ];
         return $behaviors;
     }

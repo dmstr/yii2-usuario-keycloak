@@ -3,6 +3,7 @@
 namespace dmstr\usuario\keycloak\traits;
 
 use Yii;
+use Exception;
 
 trait AuditLogTrait
 {

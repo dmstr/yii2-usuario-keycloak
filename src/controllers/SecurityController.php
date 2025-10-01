@@ -120,6 +120,11 @@ class SecurityController extends \Da\User\Controller\SecurityController
 
             // Check if user is logged in via keycloak by checking the access token type
             if ($client instanceof Keycloak && $client->getAccessToken() instanceof OAuthToken) {
+
+                // refresh access token before login to ensure it is not expired
+                // this will throw an ClientErrorResponseException
+                $client->refreshAccessToken($client->getAccessToken());
+
                 $logoutUrl = $this->keycloakFrontChannelLogoutUrl($client, $this->skipLogoutConfirmation);
                 if (!empty($logoutUrl)) {
                     Yii::$app->response->redirect($logoutUrl)->send();

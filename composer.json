@@ -29,6 +29,7 @@
   },
   "suggest": {
     "bizley/jwt": "When using JWT for REST authentication. Above v4",
-    "lcobucci/clock": "JWT StrictValidAt check"
+    "lcobucci/clock": "JWT StrictValidAt check",
+    "bedezign/yii2-audit": "Optional enhanced logging"
   }
 }

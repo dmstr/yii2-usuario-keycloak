@@ -4,6 +4,7 @@ namespace dmstr\usuario\keycloak\controllers;
 
 use Da\User\AuthClient\Keycloak;
 use Da\User\Event\UserEvent;
+use dmstr\usuario\keycloak\traits\AuditLogTrait;
 use Yii;
 use yii\authclient\ClientErrorResponseException;
 use yii\authclient\OAuthToken;
@@ -14,6 +15,8 @@ use yii\web\ServerErrorHttpException;
 
 class SecurityController extends \Da\User\Controller\SecurityController
 {
+    use AuditLogTrait;
+
     public string $keycloakAuthClientId = 'keycloak';
     public bool $overrideAuthRedirect = true;
     public bool $skipLogoutConfirmation = true;
@@ -82,15 +85,15 @@ class SecurityController extends \Da\User\Controller\SecurityController
                     $this->trigger(UserEvent::EVENT_AFTER_LOGOUT, $event);
                     Yii::$app->end();
                 } else {
-                    Yii::warning('Cannot logout user from client');
+                    $this->logError('Cannot logout user from client');
                 }
             }
         } catch (ClientErrorResponseException $exception) {
             // Token is not active anymore. Skipping logout from keycloak as its session should be already expired at this point
-            Yii::warning($exception->getMessage());
+            $this->logException($exception);
         } catch (InvalidArgumentException $exception) {
             // Client is not found in collection
-            Yii::error($exception->getMessage());
+            $this->logException($exception);
         }
 
         if (Yii::$app->getUser()->logout()) {

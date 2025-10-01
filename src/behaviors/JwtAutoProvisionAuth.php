@@ -7,6 +7,7 @@ use Da\User\Event\UserEvent;
 use Da\User\Model\SocialNetworkAccount;
 use Da\User\Model\User;
 use Da\User\Traits\ContainerAwareTrait;
+use dmstr\usuario\keycloak\traits\AuditLogTrait;
 use Exception;
 use Yii;
 use yii\authclient\ClientInterface;
@@ -26,6 +27,7 @@ use yii\web\User as UserComponent;
 class JwtAutoProvisionAuth extends HttpBearerAuth
 {
     use ContainerAwareTrait;
+    use AuditLogTrait;
 
     /**
      * component id of the jwt component
@@ -155,44 +157,6 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
     protected function getAuthClient(): ClientInterface
     {
         return $this->_authClient;
-    }
-
-    protected function logException(Exception $exception): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->exception($exception);
-        } else {
-            Yii::error($exception->getMessage());
-        }
-    }
-
-    protected function logInfo(mixed $data): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->data('info', $data);
-        } else {
-            Yii::info($data);
-        }
-    }
-
-    protected function logError(string $message): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->errorMessage($message);
-        } else {
-            Yii::error($message);
-        }
-    }
-
-    protected function logDebug(string $message): void
-    {
-        if ($this->debug) {
-            if (Yii::$app->hasModule('audit')) {
-                Yii::$app->getModule('audit')->data('debug', $message);
-            } else {
-                Yii::debug($message);
-            }
-        }
     }
 
     protected function createOrConnectUserFromToken(string $jwt): IdentityInterface|null

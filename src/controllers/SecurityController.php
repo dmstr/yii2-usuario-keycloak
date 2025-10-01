@@ -46,10 +46,29 @@ class SecurityController extends \Da\User\Controller\SecurityController
     }
 
     /**
-     * @throws \yii\web\ServerErrorHttpException
+     * @ref https://openid.net/specs/openid-connect-frontchannel-1_0.html
      */
-    public function actionFrontChannelLogout(string $sid)
+    public function actionFrontChannelLogout(string $sid, ?string $iss = null)
     {
+        // [...] The response SHOULD include the Cache-Control HTTP response header field with a no-store value [...]
+        $this->response->getHeaders()->set('Cache-Control', 'no-store');
+
+        // Optional: Validate issuer if provided (RFC recommendation)
+        if ($iss !== null) {
+            try {
+                /** @var Keycloak $client */
+                $client = Yii::$app->authClientCollection->getClient($this->keycloakAuthClientId);
+                $expectedIssuer = $client->getConfigParam('issuer');
+                if ($expectedIssuer && $iss !== $expectedIssuer) {
+                    $this->logError("Front-channel logout: issuer mismatch. Expected: {$expectedIssuer}, Got: {$iss}");
+                    return '';
+                }
+            } catch (\Exception $e) {
+                $this->logError("Front-channel logout: Could not validate issuer: " . $e->getMessage());
+                return '';
+            }
+        }
+
         // find all sessions with given sid and destroy them
         $sessionIds = (new Query())
             ->select('id')
@@ -59,7 +78,8 @@ class SecurityController extends \Da\User\Controller\SecurityController
 
         foreach ($sessionIds as $sessionId) {
             if (!Yii::$app->getSession()->destroySession($sessionId)) {
-                throw new ServerErrorHttpException(Yii::t('usuario', 'An error occurred while destroying your session.'));
+                // RFC: Consider already-logged-out states as successful
+                $this->logInfo("Could not destroy session {$sessionId}, possibly already destroyed");
             }
         }
 

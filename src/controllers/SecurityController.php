@@ -69,6 +69,9 @@ class SecurityController extends \Da\User\Controller\SecurityController
             }
         }
 
+        // Get the current session ID to check if it needs to be destroyed
+        $currentSessionId = Yii::$app->getSession()->getId();
+
         // find all sessions with given sid and destroy them
         $sessionIds = (new Query())
             ->select('id')
@@ -76,11 +79,29 @@ class SecurityController extends \Da\User\Controller\SecurityController
             ->where(['keycloak_sid' => $sid])
             ->column();
 
+        // Check if the current session is in the list of sessions to destroy
+        $shouldDestroyCurrentSession = in_array($currentSessionId, $sessionIds, true);
+
         foreach ($sessionIds as $sessionId) {
             if (!Yii::$app->getSession()->destroySession($sessionId)) {
                 // RFC: Consider already-logged-out states as successful
                 $this->logInfo("Could not destroy session {$sessionId}, possibly already destroyed");
+            } else {
+                $this->logInfo(['single session id' => $sessionId]);
             }
+        }
+
+        // If the current session was destroyed, we need to logout the user and destroy the current session
+        if ($shouldDestroyCurrentSession) {
+            $this->logInfo("Current session matched keycloak_sid, logging out user");
+
+            // Logout the user
+            if (!Yii::$app->getUser()->getIsGuest()) {
+                Yii::$app->getUser()->logout(false); // Don't destroy session here, we'll do it manually
+            }
+
+            // Destroy the current session
+            Yii::$app->getSession()->destroy();
         }
 
         return '';

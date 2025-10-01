@@ -2,6 +2,8 @@
 
 namespace dmstr\usuario\keycloak\traits;
 
+use Yii;
+
 trait AuditLogTrait
 {
     public bool $debug = false;

@@ -543,3 +543,11 @@ Optional but recommended: If you use `codemix\localeurls\UrlManager` as an url m
 ```
 
 In your keycloak add this as your front channel logout url in the client settings: `https://your-domain/user/security/front-channel-logout`
+
+## Custom IDP Hint
+
+Used to automatically redirect  to an existent Broker. Current default in SecurityController is set to the Keycloak default kc_idp_hint.
+
+To set a custom param overwrite idp_hint_param in SecurityController.
+
+To use this feature, add the hint to the URL after the authclient ```/user/security/auth?authclient=keycloak&kc_idp_hint=broker-idp-alias```

@@ -5,6 +5,7 @@ namespace dmstr\usuario\keycloak\controllers;
 use Da\User\AuthClient\Keycloak;
 use Da\User\Event\UserEvent;
 use dmstr\usuario\keycloak\traits\AuditLogTrait;
+use dmstr\usuario\keycloak\actions\AuthAction;
 use Yii;
 use yii\authclient\ClientErrorResponseException;
 use yii\authclient\OAuthToken;
@@ -21,6 +22,8 @@ class SecurityController extends \Da\User\Controller\SecurityController
     public bool $overrideAuthRedirect = true;
     public bool $skipLogoutConfirmation = true;
     public string $postLogoutRedirectUrl;
+    // Default IDP hint for Keycloak
+    public string $idp_hint_param = 'kc_idp_hint';
 
     /**
      * @inheritdoc
@@ -30,7 +33,14 @@ class SecurityController extends \Da\User\Controller\SecurityController
         $actions = parent::actions();
         if ($this->overrideAuthRedirect) {
             // Original redirect view introduces some wierd js magic. We don't want that so we overload it.
-            $actions['auth']['redirectView'] = dirname(__DIR__) . '/views/security/redirect.php';
+            $actions['auth'] = [
+                'class' => AuthAction::class,
+                'successCallback' => Yii::$app->user->isGuest
+                    ? [$this, 'authenticate']
+                    : [$this, 'connect'],
+                'redirectView' => dirname(__DIR__) . '/views/security/redirect.php',
+                'idp_hint_param' => $this->idp_hint_param
+            ];
         }
         return $actions;
     }

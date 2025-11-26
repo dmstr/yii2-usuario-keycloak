@@ -36,7 +36,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
 
     /**
      * ID of the auth client
-    */
+     */
     public string $authClientId = 'keycloak';
 
     /**
@@ -206,32 +206,41 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
 
         // create and attach social account
         /** @var SocialNetworkAccount $socialNetworkAccount */
-        $socialNetworkAccount = $this->make(SocialNetworkAccount::class, [], [
+        $socialNetworkAccount = SocialNetworkAccount::findOne([
             'provider' => $this->getAuthClient()->getId(),
             'client_id' => $claims->get('sub'),
-            'data' => Json::encode($claims->all()),
-            'user_id' => $user->id,
-            'username' => $user->username,
-            'email' => $user->email
+            'user_id' => $user->id
         ]);
 
-        // No events for social network account here because in the original connect service the event is triggered on the controller and not on the model
-
-        // we need to wrap this in a try-catch block as there are no rules in this model...
-        try {
-            if (!$socialNetworkAccount->save()) {
-                $transaction->rollBack();
-                $this->logError('Error connect social network account');
-                $this->logInfo($socialNetworkAccount->getErrors());
+        if ($socialNetworkAccount === null) {
+            $this->logInfo('Social network Account not found, creating new one.');
+            $socialNetworkAccount = $this->make(SocialNetworkAccount::class, [], [
+                'provider' => $this->getAuthClient()->getId(),
+                'client_id' => $claims->get('sub'),
+                'data' => Json::encode($claims->all()),
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email
+            ]);
+            // No events for social network account here because in the original connect service the event is triggered on the controller and not on the model
+            // we need to wrap this in a try-catch block as there are no rules in this model...
+            try {
+                if (!$socialNetworkAccount->save()) {
+                    $transaction->rollBack();
+                    $this->logError('Error connect social network account');
+                    $this->logInfo($socialNetworkAccount->getErrors());
+                    return null;
+                }
+                $this->logInfo('Social Network Account created');
+            } catch (DbException $exception) {
+                $this->logError('Error creating social network account');
+                $this->logException($exception);
                 return null;
             }
-        } catch (DbException $exception) {
-            $this->logError('Error creating social network account');
-            $this->logException($exception);
-            return null;
+            $this->logInfo('Connected social network account to user');
+        } else {
+            $this->logInfo('Social Network Account already exists, skipping creation.');
         }
-
-        $this->logInfo('Connected social network account to user');
 
         try {
             $transaction->commit();

@@ -62,9 +62,13 @@ class TokenRoleRule extends Rule
             $client = Yii::$app->get($this->authCollectionComponent)->getClient($this->authClientId);
             // NOTE: oauth client returns the parsed info from *ID TOKEN* in this method and NOT the Access Token.
             // Access Token and Refresh Token are included here as Parameters
-            $tokenData = $client?->getAccessToken();
-            // Get the real access token from the Params
-            $accessToken = $tokenData?->getParam($this->tokenParam);
+            try {
+                $tokenData = $client?->getAccessToken();
+                // Get the real access token from the Params
+                $accessToken = $tokenData?->getParam($this->tokenParam);
+            } catch (ClientErrorResponseException $e) {
+                $accessToken = null;
+            }
             if($accessToken) {
                 // The token here is actually a UnencryptedToken with Data Claims
                 /** @var UnencryptedToken $parsedAccessToken */

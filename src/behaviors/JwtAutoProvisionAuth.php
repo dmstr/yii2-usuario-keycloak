@@ -123,7 +123,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
         $identity = $this->findOrCreateUser($user, $authHeaderValue);
 
         if ($identity instanceof IdentityInterface) {
-            $this->logInfo('Logging in new user #' . $identity->getId());
+            $this->logInfo('Logging in user #' . $identity->getId());
             if (is_callable($this->afterUserValidated)) {
                 if (!call_user_func($this->afterUserValidated, $identity, $identity->getSocialNetworkAccounts()[$this->authClientId] ?? null, $authHeaderValue)) {
                     $this->logInfo('AfterUserValidated failed');

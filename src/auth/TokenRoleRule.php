@@ -71,7 +71,7 @@ class TokenRoleRule extends Rule
                 // Parse the real Access Token
                 $parsedAccessToken = Yii::$app->get($this->jwtComponent)?->parse($accessToken);
                 // Get the Roles from the Roles Claim
-                $roles = $parsedAccessToken?->claims()?->get($this->rbacRolesClaimName);
+                $roles = $this->rolesFromAccessToken($parsedAccessToken);
                 // If we don't have an Access Token or roles, directly return false
                 if (!empty($roles)) {
                     // Check if the Role is in the list of Roles from the token
@@ -80,6 +80,33 @@ class TokenRoleRule extends Rule
             }
         }
         return false;
+    }
+
+    /**
+     * Reads the roles from the token, following a dot-separated path
+     * (e.g. "realm_access.roles" first picks the "realm_access" claim,
+     * then its "roles" entry). Returns null if the path doesn't resolve
+     * to an array.
+     */
+    protected function rolesFromAccessToken(UnencryptedToken $token): ?array
+    {
+        $segments = explode('.', $this->rbacRolesClaimName);
+        $head = array_shift($segments);
+        $value = $token->claims()?->get($head);
+
+        foreach ($segments as $segment) {
+            if (is_array($value) && array_key_exists($segment, $value)) {
+                $value = $value[$segment];
+                continue;
+            }
+            if (is_object($value) && isset($value->{$segment})) {
+                $value = $value->{$segment};
+                continue;
+            }
+            return null;
+        }
+
+        return is_array($value) ? $value : null;
     }
 }
 

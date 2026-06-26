@@ -7,6 +7,7 @@ use Da\User\Event\UserEvent;
 use Da\User\Model\SocialNetworkAccount;
 use Da\User\Model\User;
 use Da\User\Traits\ContainerAwareTrait;
+use dmstr\usuario\keycloak\traits\AuditLogTrait;
 use Exception;
 use Yii;
 use yii\authclient\ClientInterface;
@@ -26,6 +27,7 @@ use yii\web\User as UserComponent;
 class JwtAutoProvisionAuth extends HttpBearerAuth
 {
     use ContainerAwareTrait;
+    use AuditLogTrait;
 
     /**
      * component id of the jwt component
@@ -34,7 +36,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
 
     /**
      * ID of the auth client
-    */
+     */
     public string $authClientId = 'keycloak';
 
     /**
@@ -121,7 +123,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
         $identity = $this->findOrCreateUser($user, $authHeaderValue);
 
         if ($identity instanceof IdentityInterface) {
-            $this->logInfo('Logging in new user #' . $identity->getId());
+            $this->logInfo('Logging in user #' . $identity->getId());
             if (is_callable($this->afterUserValidated)) {
                 if (!call_user_func($this->afterUserValidated, $identity, $identity->getSocialNetworkAccounts()[$this->authClientId] ?? null, $authHeaderValue)) {
                     $this->logInfo('AfterUserValidated failed');
@@ -155,44 +157,6 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
     protected function getAuthClient(): ClientInterface
     {
         return $this->_authClient;
-    }
-
-    protected function logException(Exception $exception): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->exception($exception);
-        } else {
-            Yii::error($exception->getMessage());
-        }
-    }
-
-    protected function logInfo(mixed $data): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->data('info', $data);
-        } else {
-            Yii::info($data);
-        }
-    }
-
-    protected function logError(string $message): void
-    {
-        if (Yii::$app->hasModule('audit')) {
-            Yii::$app->getModule('audit')->errorMessage($message);
-        } else {
-            Yii::error($message);
-        }
-    }
-
-    protected function logDebug(string $message): void
-    {
-        if ($this->debug) {
-            if (Yii::$app->hasModule('audit')) {
-                Yii::$app->getModule('audit')->data('debug', $message);
-            } else {
-                Yii::debug($message);
-            }
-        }
     }
 
     protected function createOrConnectUserFromToken(string $jwt): IdentityInterface|null
@@ -242,32 +206,41 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
 
         // create and attach social account
         /** @var SocialNetworkAccount $socialNetworkAccount */
-        $socialNetworkAccount = $this->make(SocialNetworkAccount::class, [], [
+        $socialNetworkAccount = SocialNetworkAccount::findOne([
             'provider' => $this->getAuthClient()->getId(),
             'client_id' => $claims->get('sub'),
-            'data' => Json::encode($claims->all()),
-            'user_id' => $user->id,
-            'username' => $user->username,
-            'email' => $user->email
+            'user_id' => $user->id
         ]);
 
-        // No events for social network account here because in the original connect service the event is triggered on the controller and not on the model
-
-        // we need to wrap this in a try-catch block as there are no rules in this model...
-        try {
-            if (!$socialNetworkAccount->save()) {
-                $transaction->rollBack();
-                $this->logError('Error connect social network account');
-                $this->logInfo($socialNetworkAccount->getErrors());
+        if ($socialNetworkAccount === null) {
+            $this->logInfo('Social network Account not found, creating new one.');
+            $socialNetworkAccount = $this->make(SocialNetworkAccount::class, [], [
+                'provider' => $this->getAuthClient()->getId(),
+                'client_id' => $claims->get('sub'),
+                'data' => Json::encode($claims->all()),
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email
+            ]);
+            // No events for social network account here because in the original connect service the event is triggered on the controller and not on the model
+            // we need to wrap this in a try-catch block as there are no rules in this model...
+            try {
+                if (!$socialNetworkAccount->save()) {
+                    $transaction->rollBack();
+                    $this->logError('Error connect social network account');
+                    $this->logInfo($socialNetworkAccount->getErrors());
+                    return null;
+                }
+                $this->logInfo('Social Network Account created');
+            } catch (DbException $exception) {
+                $this->logError('Error creating social network account');
+                $this->logException($exception);
                 return null;
             }
-        } catch (DbException $exception) {
-            $this->logError('Error creating social network account');
-            $this->logException($exception);
-            return null;
+            $this->logInfo('Connected social network account to user');
+        } else {
+            $this->logInfo('Social Network Account already exists, skipping creation.');
         }
-
-        $this->logInfo('Connected social network account to user');
 
         try {
             $transaction->commit();

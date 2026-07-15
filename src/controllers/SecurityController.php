@@ -214,7 +214,13 @@ class SecurityController extends \Da\User\Controller\SecurityController
             $event = $this->make(SocialNetworkAuthEvent::class, [$account, $client]);
             $this->trigger(SocialNetworkAuthEvent::EVENT_BEFORE_CONNECT, $event);
 
-            $account->save(false);
+            // Do not claim success (flash + AFTER_CONNECT) if the row did not actually persist.
+            if (!$account->save(false)) {
+                $this->logError('guarded connect: failed to persist social account for user #'
+                    . $sessionUser->id . ' (sub ' . $sub . '); errors: ' . json_encode($account->getErrors()));
+                Yii::$app->session->setFlash('danger', Yii::t('usuario', 'This account could not be connected'));
+                return false;
+            }
 
             Yii::$app->session->setFlash('success', Yii::t('usuario', 'Your account has been connected'));
             $this->trigger(SocialNetworkAuthEvent::EVENT_AFTER_CONNECT, $event);
@@ -235,7 +241,15 @@ class SecurityController extends \Da\User\Controller\SecurityController
         // (uncaught PHP Error -> 500 for the correctly logged-in user on the next request).
         $token = $client->getAccessToken();
 
-        Yii::$app->user->logout();
+        // If the stale session cannot be dropped (e.g. a beforeLogout handler vetoes), abort:
+        // authenticating the new identity on top of the surviving session would recreate the very
+        // mislink this path exists to prevent.
+        if (!Yii::$app->user->logout()) {
+            $this->logError('guarded connect: could not log out stale session (user #'
+                . ($sessionUser->id ?? 'unknown') . '); aborting re-authentication to avoid mislink');
+            Yii::$app->session->setFlash('danger', Yii::t('usuario', 'Something went wrong'));
+            return false;
+        }
 
         // Resolve/create the true identity (triggers BEFORE_AUTHENTICATE incl. email_verified check).
         $result = $this->authenticate($client);

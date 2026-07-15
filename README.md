@@ -76,6 +76,61 @@ return [
 ]
 ```
 
+## Social login mode (SSO connect hardening)
+
+When a Keycloak login callback arrives while a **local session already exists**, the base
+`2amigos/yii2-usuario` behaviour treats it as *"connect the returned identity to the current
+session"*. That is correct for classic interactive account-linking (a logged-in user clicks
+*"connect Google"* in their profile), but wrong for pure SSO deployments where the **same**
+`security/auth` endpoint is the primary login: a stale session then captures whatever identity
+the callback returns — binding the **wrong** person's Keycloak `sub` to the open account.
+
+`SecurityController::$socialLoginMode` controls this. The default is **`legacy`** so existing
+installations are unaffected; SSO deployments should opt in to `guarded`.
+
+| Mode | Guest login | Login while a session is open | Use for |
+|---|---|---|---|
+| `legacy` *(default)* | authenticate | **connect** returned identity to the open session (no identity check) | non-SSO / classic account-linking; backwards-compatible default |
+| `guarded` *(recommended for SSO)* | authenticate | connect **only** if the returned identity provably belongs to the same user (owner resolved by immutable `sub`, else by verified e-mail); otherwise log out the stale session and authenticate as the true identity | pure Keycloak SSO where the auth endpoint is the primary login |
+| `authenticate` | authenticate | always authenticate via the token identity; never connect-to-session | SSO where profile-based account-linking is never used |
+
+```php
+use dmstr\usuario\keycloak\controllers\SecurityController;
+
+return [
+    'modules' => [
+        'user' => [
+            'controllerMap' => [
+                'security' => [
+                    'class' => SecurityController::class,
+                    // opt in to SSO connect hardening
+                    'socialLoginMode' => SecurityController::SOCIAL_LOGIN_MODE_GUARDED,
+                ]
+            ]
+        ]
+    ]
+]
+```
+
+Notes:
+
+- **Unknown values fail fast.** An invalid `socialLoginMode` (e.g. a typo) throws
+  `InvalidConfigException` in `init()` — it never silently falls back to `legacy`, so a
+  consumer that meant to opt in to hardening cannot end up unprotected by accident.
+- **`email_verified` is enforced strictly** in `guarded`: a *missing* `email_verified` claim
+  counts as **not** verified. This is deliberately stricter than the app-side event handler
+  pattern below (`isset(...) && === false`, which lets a missing claim through).
+- **`guarded` populates `email`/`username`** on the account row (unlike the base connect path),
+  so it produces no new rows with empty columns.
+- **Pre-existing mislinks are perpetuated, not repaired.** Under `guarded` the owner is resolved
+  from the current DB state, so an already-wrong `sub → user` link keeps logging in the wrong
+  user until the data is cleaned. Deploy the code fix **first**, then run the data cleanup.
+- **`guarded` cannot tell an SSO login from an intentional profile connect**, because both run
+  through the same `security/auth` endpoint. If a deployment relies on users deliberately
+  linking a second identity with a *different* verified e-mail, `guarded` will block that.
+  Evaluate before enabling.
+- **Planned change:** the default is expected to flip to `guarded` in **6.0.0**.
+
 **Only allow login to users with verified emails**
 
 ```php

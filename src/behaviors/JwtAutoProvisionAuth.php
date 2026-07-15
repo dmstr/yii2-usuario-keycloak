@@ -19,6 +19,7 @@ use yii\di\Instance;
 use yii\filters\auth\HttpBearerAuth;
 use yii\helpers\Json;
 use yii\web\BadRequestHttpException;
+use yii\web\ConflictHttpException;
 use yii\web\IdentityInterface;
 use yii\web\UnauthorizedHttpException;
 use yii\web\UnprocessableEntityHttpException;
@@ -167,9 +168,38 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
         $claims = $token->claims();
 
         $email = $claims->get('email');
+        $sub = $claims->get('sub');
+        $provider = $this->getAuthClient()->getId();
+
+        // Resolve the social account by its natural key (provider, client_id) WITHOUT user_id and
+        // BEFORE creating any user. This closes two failure modes when the sub is already linked:
+        //  - silently authenticating the (possibly wrong) linked user, and
+        //  - spawning a side-effect user whose account insert then fails on UNIQUE(provider, client_id).
+        /** @var SocialNetworkAccount|null $socialNetworkAccount */
+        $socialNetworkAccount = SocialNetworkAccount::findOne([
+            'provider' => $provider,
+            'client_id' => $sub,
+        ]);
 
         // Check if a user with email form claim exists so we can connect it
         $user = $this->make(User::class)::findOne(['email' => $email]);
+
+        // A sub already linked to a DIFFERENT user than the token's e-mail resolves to is a
+        // mislink (recidivism signal). Refuse loudly instead of authenticating the wrong user;
+        // no user is created because we bail out before the transaction begins.
+        if ($socialNetworkAccount !== null
+            && $socialNetworkAccount->user_id !== null
+            && $user !== null
+            && (int)$socialNetworkAccount->user_id !== (int)$user->id) {
+            $this->logError(sprintf(
+                'JWT auto-provision refused: sub "%s" is linked to user #%s, but email "%s" resolves to user #%s',
+                (string)$sub,
+                $socialNetworkAccount->user_id,
+                (string)$email,
+                $user->id
+            ));
+            throw new ConflictHttpException(Yii::t('usuario-keycloak', 'This social account is linked to a different user.'));
+        }
 
         $transaction = $this->make(User::class)::getDb()->beginTransaction();
 
@@ -204,19 +234,12 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
 
         $this->logInfo('Going to connect social network account');
 
-        // create and attach social account
-        /** @var SocialNetworkAccount $socialNetworkAccount */
-        $socialNetworkAccount = SocialNetworkAccount::findOne([
-            'provider' => $this->getAuthClient()->getId(),
-            'client_id' => $claims->get('sub'),
-            'user_id' => $user->id
-        ]);
-
+        // create and attach social account (natural-key lookup already performed above)
         if ($socialNetworkAccount === null) {
             $this->logInfo('Social network Account not found, creating new one.');
             $socialNetworkAccount = $this->make(SocialNetworkAccount::class, [], [
-                'provider' => $this->getAuthClient()->getId(),
-                'client_id' => $claims->get('sub'),
+                'provider' => $provider,
+                'client_id' => $sub,
                 'data' => Json::encode($claims->all()),
                 'user_id' => $user->id,
                 'username' => $user->username,
@@ -233,6 +256,7 @@ class JwtAutoProvisionAuth extends HttpBearerAuth
                 }
                 $this->logInfo('Social Network Account created');
             } catch (DbException $exception) {
+                $transaction->rollBack();
                 $this->logError('Error creating social network account');
                 $this->logException($exception);
                 return null;

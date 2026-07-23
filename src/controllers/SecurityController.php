@@ -251,15 +251,18 @@ class SecurityController extends \Da\User\Controller\SecurityController
             return false;
         }
 
-        // Resolve/create the true identity (triggers BEFORE_AUTHENTICATE incl. email_verified check).
-        $result = $this->authenticate($client);
-
-        // Re-persist the token into the freshly created session.
+        // Re-persist the token into the fresh session NOW, before authenticate(): consumers may
+        // end the request inside the login event (redirect + Yii::$app->end(), e.g. an
+        // EVENT_AFTER_LOGIN portal-sync handler), which makes any code after authenticate()
+        // unreachable. Persisting afterwards left a logged-in session with NO stored token ->
+        // every later request depending on it (portal API calls, sid write, revalidation) failed.
+        // The session data survives the login's regenerateID, so persisting here is safe.
         if ($token !== null) {
             $client->setAccessToken($token);
         }
 
-        return $result;
+        // Resolve/create the true identity (triggers BEFORE_AUTHENTICATE incl. email_verified check).
+        return $this->authenticate($client);
     }
 
     public function behaviors()

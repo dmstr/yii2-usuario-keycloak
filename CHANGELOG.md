@@ -7,6 +7,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1]
+
+### Fixed
+
+- `guarded` connect, identity-mismatch path: the Keycloak token is now re-persisted into the
+  fresh session **before** `authenticate()` is called. Previously it was persisted afterwards,
+  which is unreachable when a consumer ends the request inside the login event (e.g. an
+  `EVENT_AFTER_LOGIN` handler doing redirect + `Yii::$app->end()`). Such logins produced a valid
+  session **without a stored access token**: subsequent requests that depend on it (outbound
+  portal API calls, `keycloak_sid` session writes, per-request token revalidation) failed until
+  the next full OIDC round-trip.
+
 ## [5.1.0]
 
 ### Added
